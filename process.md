@@ -55,7 +55,17 @@
 
 ---
 
-## 🗓️ Session 4 — T3: Layout Timer (arena full-screen + đồng hồ)
+## 🗓️ Session 4 — T3: Layout Timer (arena full-screen + đồng hồ)  ✅ HOÀN THÀNH
+- [x] **index.html:** thêm `#timer-layout` (topbar 2 đồng hồ: `#timer-clock` số + `#timer-boss-bar` thanh; arena `#timer-arena` với `#timer-boss-box` trái + `#timer-hero-box` phải + `#timer-hero-media`).
+- [x] **css/style.css:** thêm ~130 dòng style `.timer-layout`, `.timer-clock`, `.timer-boss-bar`, `.timer-boss` (trái), `.timer-hero` (phải), `.timer-hero-media`.
+- [x] **js/game.js:** thêm hàm `startTimer()`, `updateTimerClock()`, `updateTimerBossBar()`, `updateTimerHeroAvatar()`; nối vào `startGame('timer')`; sửa `handleManualTick` để Timer cộng mana +1 (cap 10) khi tick đúng; ép hiện tick/cross overlay trong Timer.
+- [x] **Kiểm tra:** `node --check` OK; chạy thử `startTimer()` trong sandbox → đếm ngược + thanh boss cập nhật, tick đúng 2 lần = mana 2. Không lỗi runtime.
+- [x] **Push:** commit `T3 — Timer layout: full-screen arena, 2 clocks, boss/hero boxes` → main.
+- [ ] **Chờ bạn test:** bấm card Timer → thấy sàn đấu, Boss trái, Hero phải (ảnh mặc định), 2 đồng hồ chạy. Bấm ✓ → mana tăng. (Hero chưa có link riêng → T4; Boss chưa lật ngang → T5.)
+
+---
+
+## 🗓️ Session 5 — T4: Hero kiểu Boss (link avatar, cố định phải)
 
 ---
 

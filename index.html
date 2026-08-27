@@ -396,6 +396,38 @@
     </div>
 
 
+    <!-- ─────────────── TIMER LAYOUT ─────────────── -->
+    <div id="timer-layout" class="timer-layout hidden">
+        <!-- Top: 2 clocks -->
+        <div class="timer-topbar">
+            <div class="timer-clock-box">
+                <div class="timer-clock-label">⏰ Thời Gian Còn Lại</div>
+                <div id="timer-clock" class="timer-clock">02:00</div>
+            </div>
+            <div class="timer-boss-progress-box">
+                <div class="timer-clock-label">👹 Boss Đang Tiến Lại</div>
+                <div class="timer-boss-bar-bg">
+                    <div id="timer-boss-bar" class="timer-boss-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Arena: Boss trái, Hero phải -->
+        <div class="timer-arena" id="timer-arena">
+            <!-- BOSS (trái) -->
+            <div id="timer-boss-box" class="timer-boss">
+                <div class="boss-avatar-media"></div>
+                <div id="timer-boss-fx" class="boss-effects-layer"></div>
+            </div>
+
+            <!-- HERO (phải) -->
+            <div id="timer-hero-box" class="timer-hero">
+                <div class="timer-hero-media"></div>
+                <div id="timer-hero-fx" class="float-fx-layer"></div>
+                <div class="mana-badge">⚡<span id="timer-mana-text">0</span></div>
+            </div>
+        </div>
+    </div>
     <!-- Pause overlay -->
     <div id="pause-overlay" class="pause-overlay hidden">
         <div class="pause-box">

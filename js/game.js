@@ -234,9 +234,11 @@ const Game = {
         document.getElementById('game-container').classList.remove('hidden');
         document.getElementById('solo-layout').classList.toggle('hidden', mode !== 'solo');
         document.getElementById('pvp-layout').classList.toggle('hidden',  mode !== 'pvp');
+        document.getElementById('timer-layout').classList.toggle('hidden', mode !== 'timer');
         
-        document.getElementById('tick-cross-overlay')?.classList.toggle('hidden', 
-            !(this.config.tickCrossEnabled && this.config.questionMode === 'flashcard'));
+        // Tick/Cross overlay: hiện trong Timer (luôn) hoặc khi bật cài đặt ở flashcard
+        const showTickCross = (mode === 'timer') || (this.config.tickCrossEnabled && this.config.questionMode === 'flashcard');
+        document.getElementById('tick-cross-overlay')?.classList.toggle('hidden', !showTickCross);
 
         document.getElementById('btn-stop').classList.remove('hidden');
         document.getElementById('btn-pause').classList.remove('hidden');
@@ -266,6 +268,7 @@ const Game = {
 
         if (mode === 'solo') this.startSolo();
         else if (mode === 'pvp') this.startPvP();
+        else if (mode === 'timer') this.startTimer();
     },
 
     // ══════════════════════════════════════════
@@ -275,6 +278,86 @@ const Game = {
         Cards.reset('mode2');
         this.refillBoard('mode2', 'solo');
         this.startTimers('solo');
+    },
+
+    startTimer() {
+        // Timer mode: Boss tự tiến từ trái sang phải, quản trò bấm Đúng/Sai để cộng mana.
+        // Thắng khi hết giờ mà Boss chưa chạm Hero. Thua khi Boss chạm Hero.
+        this.state.timeRemaining = this.config.timerTime || this.config.bossTime || 120;
+        this.state.boss.position = this.state.boss.maxPosition;
+        this.state.boss.speedMult = 1.0;
+        this.state.boss.frozen = false;
+        this.state.boss.paralyzed = false;
+        this.state.boss.sleeping = false;
+        this.state.boss.slowed = 0;
+        this.state.boss.blind = false;
+        this.state.boss.scaleLevel = 0;
+        this.state.mana = 0;
+        UI.updateMana();
+        UI.updateBossAvatar();          // fills .boss-avatar-media (cả Timer)
+        this.updateTimerHeroAvatar();    // fills .timer-hero-media
+        this.updateTimerClock();
+        this.updateTimerBossBar();
+
+        // Đếm ngược thời gian
+        this.state.gameTimerInterval = setInterval(() => {
+            if (!this.state.isRunning || this.state.isPaused || this.state.isGameOver) return;
+            this.state.timeRemaining--;
+            this.updateTimerClock();
+            if (this.state.timeRemaining <= 0) {
+                this.endGame('win');   // hết giờ mà chưa thua = THẮNG
+            }
+        }, 1000);
+
+        // Boss tiến tới (100ms tick)
+        this.state.bossMovementInterval = setInterval(() => {
+            if (!this.state.isRunning || this.state.isPaused || this.state.isGameOver) return;
+            const boss = this.state.boss;
+            if (boss.frozen || boss.paralyzed || boss.sleeping) return;
+
+            let speed = (this.config.bossBaseSpeed || 1) * boss.speedMult;
+            if (boss.slowed > 0) speed *= (1 - boss.slowed);
+
+            boss.position -= speed * 0.1;   // về 0 = chạm Hero = thua
+            if (boss.position <= 0) {
+                boss.position = 0;
+                this.updateTimerBossBar();
+                this.endGame('lose');
+                return;
+            }
+            if (boss.position > boss.maxPosition) boss.position = boss.maxPosition;
+            this.updateTimerBossBar();
+        }, 100);
+    },
+
+    updateTimerClock() {
+        const el = document.getElementById('timer-clock');
+        if (!el) return;
+        const t = Math.max(0, this.state.timeRemaining);
+        const m = String(Math.floor(t / 60)).padStart(2, '0');
+        const s = String(t % 60).padStart(2, '0');
+        el.textContent = `${m}:${s}`;
+    },
+
+    updateTimerBossBar() {
+        const el = document.getElementById('timer-boss-bar');
+        if (!el) return;
+        const pct = Math.max(0, Math.min(100, (this.state.boss.position / this.state.boss.maxPosition) * 100));
+        el.style.width = pct + '%';
+    },
+
+    updateTimerHeroAvatar() {
+        const el = document.querySelector('#timer-hero-box .timer-hero-media');
+        if (!el) return;
+        const url = this.config.timerHeroUrl;
+        if (url && (url.startsWith('http') || url.startsWith('data:'))) {
+            const isVideo = url.endsWith('.mp4') || url.endsWith('.webm');
+            el.innerHTML = isVideo
+                ? `<video src="${url}" autoplay loop muted playsinline></video>`
+                : `<img src="${url}" onerror="this.src='https://placehold.co/200x200/1E3A8A/F6C90E?text=HERO';">`;
+        } else {
+            el.innerHTML = `<img src="https://placehold.co/200x200/1E3A8A/F6C90E?text=HERO">`;
+        }
     },
 
     startTimers(player) {
@@ -749,12 +832,25 @@ const Game = {
 
     handleManualTick(isCorrect) {
         if (!this.state.isRunning || this.state.isGameOver) return;
-        if (this.config.questionMode !== 'flashcard') return; // only for flashcard
-        
+
         // Flash animation
         const flashClass = isCorrect ? 'flash-correct' : 'flash-wrong';
         document.body.classList.add(flashClass);
         setTimeout(() => document.body.classList.remove(flashClass), 300);
+
+        if (this.state.mode === 'timer') {
+            // Timer mode: chỉ quản trò bấm Đúng/Sai -> cộng mana (tối đa 10)
+            if (isCorrect) {
+                this.state.mana = Math.min(10, this.state.mana + 1);
+                Fx.spawnFloatText('timer-hero-fx', '+1 ⚡', '#F6C90E');
+            } else {
+                this.state.combo = 0; // reset chuỗi khi sai
+            }
+            UI.updateMana();
+            return;
+        }
+
+        if (this.config.questionMode !== 'flashcard') return; // only for flashcard
 
         if (this.state.mode === 'pvp') {
             this.handlePvPAnswer(this.state.pvpTurn, 0, isCorrect);

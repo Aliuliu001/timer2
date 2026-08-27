@@ -38,6 +38,11 @@ const DEFAULT_CONFIG = {
         wrong: 'ArrowLeft',
     },
 
+    // Timer mode settings
+    timerTime: 120,           // tổng thời gian đếm ngược (giây)
+    timerHeroUrl: '',         // link ảnh Hero kiểu Boss (Pinterest/Google), rỗng = placeholder
+    timerSkillMode: 'random', // 'random' | 'buffet'
+
     // Boss rage & Sudden Death (Solo Mode)
     bossRageTime: 15,         // seconds for boss rage bar to fill
     suddenDeathTime: 30,      // when remaining time <= this, sudden death starts
