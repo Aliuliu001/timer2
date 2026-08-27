@@ -234,7 +234,6 @@ const Game = {
         document.getElementById('game-container').classList.remove('hidden');
         document.getElementById('solo-layout').classList.toggle('hidden', mode !== 'solo');
         document.getElementById('pvp-layout').classList.toggle('hidden',  mode !== 'pvp');
-        document.getElementById('team-layout').classList.toggle('hidden', mode !== 'team');
         
         document.getElementById('tick-cross-overlay')?.classList.toggle('hidden', 
             !(this.config.tickCrossEnabled && this.config.questionMode === 'flashcard'));
@@ -267,7 +266,6 @@ const Game = {
 
         if (mode === 'solo') this.startSolo();
         else if (mode === 'pvp') this.startPvP();
-        else if (mode === 'team') this.startTeam();
     },
 
     // ══════════════════════════════════════════
@@ -661,56 +659,6 @@ const Game = {
     },
 
     // ══════════════════════════════════════════
-    // TEAM MODE
-    // ══════════════════════════════════════════
-    startTeam() {
-        const order = Duckrace.result.length ? [...Duckrace.result] : [];
-        if (!order.length || this.config.teamTurnMode === 'random') {
-            // Random order
-            for (let i = 1; i <= this.config.numStudents; i++) order.push(i);
-            for (let i = order.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i+1));
-                [order[i], order[j]] = [order[j], order[i]];
-            }
-        }
-        this.state.team.studentOrder = order;
-        this.state.team.currentIdx = 0;
-
-        Cards.reset('mode2');
-        Cards.fillBoard('mode2', () => UI.renderCards());
-        this.startTimers('solo');
-        this.nextTeamTurn();
-    },
-
-    nextTeamTurn() {
-        const team = this.state.team;
-        if (team.currentIdx >= team.studentOrder.length) {
-            team.currentIdx = 0; // Loop back
-        }
-        const studentId = team.studentOrder[team.currentIdx];
-        team.currentIdx++;
-
-        UI.updateHeroAvatar(studentId, 'solo');
-        Fx.spawnFloatText('hero-fx', `⭐ Hero #${studentId}`, '#F59E0B');
-        team.awaitingAnswer = true;
-    },
-
-    handleTeamAnswer(correct) {
-        if (!this.state.team.awaitingAnswer) return;
-        if (this.state.teamHero.paralyzed || this.state.teamHero.frozen || this.state.teamHero.sleeping) return;
-        this.state.team.awaitingAnswer = false;
-        Speech.stopListening();
-
-        if (correct) {
-            this.handleCardCorrect(0, 'solo'); // answer first active card
-        } else {
-            this.handleCardWrong(0, 'solo');
-        }
-
-        setTimeout(() => this.nextTeamTurn(), 500);
-    },
-
-    // ══════════════════════════════════════════
     // CARD ANSWERS (Solo & Team)
     // ══════════════════════════════════════════
     handleCardCorrect(slotIndex, player) {
@@ -810,8 +758,6 @@ const Game = {
 
         if (this.state.mode === 'pvp') {
             this.handlePvPAnswer(this.state.pvpTurn, 0, isCorrect);
-        } else if (this.state.mode === 'team') {
-            this.handleTeamAnswer(isCorrect);
         } else {
             if (isCorrect) this.handleCardCorrect(0, 'solo');
             else this.handleCardWrong(0, 'solo');
@@ -1248,7 +1194,6 @@ const Game = {
         if (prev1) prev1.src = `Hero/${cfg.p1HeroId || '1'}.png`;
         const prev2 = document.getElementById('p2-hero-preview');
         if (prev2) prev2.src = `Hero/${cfg.p2HeroId || '2'}.png`;
-        set('cfg-team-turn-mode', cfg.teamTurnMode);
         set('cfg-shadow-clone-hits', cfg.shadowCloneHits);
         
         set('cfg-bg-url', cfg.bgUrl || '');
@@ -1365,7 +1310,6 @@ const Game = {
         const p2UrlRadio = document.getElementById('cfg-p2-type-url');
         cfg.p2AvatarType       = (p2UrlRadio && p2UrlRadio.checked) ? 'url' : 'hero';
         cfg.flashAvatar        = document.getElementById('cfg-flash-avatar')?.checked || false;
-        cfg.teamTurnMode       = get('cfg-team-turn-mode', 'duckrace');
         
         cfg.bgUrl              = get('cfg-bg-url', '');
         cfg.bgOpacity          = getNum('cfg-bg-opacity', 0.3);
@@ -1576,14 +1520,6 @@ const Game = {
         // Mode select buttons
         document.getElementById('mode-card-solo')?.addEventListener('click', () => this.startGame('solo'));
         document.getElementById('mode-card-pvp')?.addEventListener('click',  () => this.startGame('pvp'));
-        document.getElementById('mode-card-team')?.addEventListener('click', () => {
-            // For team mode: run Duckrace first if config says so
-            if (this.config.teamTurnMode === 'duckrace') {
-                this.showDuckrace();
-            } else {
-                this.startGame('team');
-            }
-        });
 
         // Settings
         document.getElementById('btn-open-settings')?.addEventListener('click', () => this.openSettings());
@@ -1904,27 +1840,6 @@ const Game = {
             });
         });
 
-        // Duckrace
-        document.getElementById('btn-duckrace-start')?.addEventListener('click', () => {
-            Duckrace.init(this.config.numStudents);
-            Duckrace.start();
-        });
-        document.getElementById('btn-duckrace-skip')?.addEventListener('click', () => Duckrace.skipToResult());
-        document.getElementById('btn-duckrace-play')?.addEventListener('click', () => {
-            document.getElementById('duckrace-screen').classList.add('hidden');
-            this.startGame('team');
-        });
-        document.getElementById('btn-duckrace-skip-to-game')?.addEventListener('click', () => {
-            Duckrace.skipToResult();
-            setTimeout(() => {
-                document.getElementById('duckrace-screen').classList.add('hidden');
-                this.startGame('team');
-            }, 500);
-        });
-
-        // Team mode answer buttons
-        document.getElementById('btn-team-correct')?.addEventListener('click', () => this.handleTeamAnswer(true));
-        document.getElementById('btn-team-wrong')?.addEventListener('click',   () => this.handleTeamAnswer(false));
         const handleMicClick = () => {
             if (Speech.isListening) {
                 Speech.stopListening();
@@ -1932,14 +1847,6 @@ const Game = {
                 Speech.startListening(
                     (transcript) => {
                         const tr = transcript.toLowerCase();
-                        // Team mode: yes / no
-                        if (this.state.mode === 'team') {
-                            const yes = ['đúng','yes','correct','right','có','okay','ok'];
-                            const no  = ['sai','no','wrong','không','nope'];
-                            if (yes.some(w => tr.includes(w))) this.handleTeamAnswer(true);
-                            else if (no.some(w => tr.includes(w))) this.handleTeamAnswer(false);
-                            return;
-                        }
 
                         // Solo & PvP mode
                         let slot = -1;
@@ -1986,14 +1893,14 @@ const Game = {
         document.getElementById('btn-mic')?.addEventListener('click', handleMicClick);
         document.getElementById('btn-mic-global')?.addEventListener('click', handleMicClick);
 
-        // Team keyboard
-        const handleTeamKey = (e) => {
-            if (!this.state.isRunning || this.state.mode !== 'team' || this.state.isGameOver) return;
+        // Quản trò keyboard (dùng cho Timer mode): bấm Đúng/Sai
+        const handleModKey = (e) => {
+            if (!this.state.isRunning || this.state.mode !== 'timer' || this.state.isGameOver) return;
             const keys = this.config.teamKeys || DEFAULT_CONFIG.teamKeys;
-            if (e.key === keys.correct) this.handleTeamAnswer(true);
-            else if (e.key === keys.wrong) this.handleTeamAnswer(false);
+            if (e.key === keys.correct) this.handleManualTick(true);
+            else if (e.key === keys.wrong) this.handleManualTick(false);
         };
-        document.addEventListener('keydown', handleTeamKey);
+        document.addEventListener('keydown', handleModKey);
 
         // Boss avatar preview
         document.getElementById('cfg-boss-theme')?.addEventListener('input', () => {
@@ -2035,12 +1942,6 @@ const Game = {
         });
     },
 
-    showDuckrace() {
-        Duckrace.init(this.config.numStudents);
-        document.getElementById('mode-select-screen').classList.add('hidden');
-        document.getElementById('duckrace-screen').classList.remove('hidden');
-        Duckrace.render();
-    },
 
     refillBoard(modeString, playerContext) {
         if (this.config.questionMode === 'quiz') {

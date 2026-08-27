@@ -279,8 +279,6 @@ const UI = {
         let container = null;
         if (Game.state.mode === 'pvp') {
             container = document.querySelector('.pvp-cards-stack');
-        } else if (Game.state.mode === 'team') {
-            container = document.querySelector('#team-layout .cards-row-h');
         } else {
             container = document.querySelector('#solo-layout .cards-row-h') || document.querySelector('.cards-row-h');
         }

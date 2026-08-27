@@ -5,7 +5,7 @@
 
 const DEFAULT_CONFIG = {
     // Game basics
-    gameMode: 'solo',         // 'solo' | 'pvp' | 'team'
+    gameMode: 'solo',         // 'solo' | 'pvp' | 'timer'
     questionMode: 'flashcard', // 'flashcard' | 'quiz'
 
     // Boss / Distance
@@ -18,13 +18,12 @@ const DEFAULT_CONFIG = {
     bgUrl: '',
     bgOpacity: 0.3,
 
-    // Students (for Team mode & Duckrace)
+    // Students (for Solo mode avatars)
     numStudents: 10,          // load Hero/1.png -> Hero/N.png
-    teamTurnMode: 'duckrace', // 'duckrace' | 'random'
 
     // PvP settings
-    pvpTurnTime: 10,          // seconds per turn (flashcard PvP)
-    pvpFreezeTime: 2,         // seconds frozen after wrong answer
+    pvpTurnTime: 10,         // seconds per turn (flashcard PvP)
+    pvpFreezeTime: 2,        // seconds frozen after wrong answer
     // Default key bindings
     pvpKeys: {
         p1A: 'q', p1B: 'w', p1C: 'e', p1D: 'r',
@@ -32,6 +31,8 @@ const DEFAULT_CONFIG = {
         p2A: 'u', p2B: 'i', p2C: 'o', p2D: 'p',
         p2Speed: '[', p2Skill: ']',
     },
+
+    // Quản trò keys (dùng cho Timer mode: bấm Đúng/Sai)
     teamKeys: {
         correct: 'ArrowRight',
         wrong: 'ArrowLeft',

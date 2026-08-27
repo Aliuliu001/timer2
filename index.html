@@ -74,19 +74,6 @@
                 <button id="btn-pvp" class="btn-mode btn-pvp">⚡ Battle PvP</button>
             </div>
 
-            <!-- TEAM -->
-            <div class="mode-card" id="mode-card-team">
-                <div class="mode-card-glow"></div>
-                <div class="mode-icon">👥</div>
-                <h2 class="mode-title">Team vs Boss</h2>
-                <p class="mode-desc">The whole class battles one Boss together! Student avatars take turns in Duckrace order.</p>
-                <ul class="mode-tags">
-                    <li>🦆 Duckrace Order</li>
-                    <li>🎤 Microphone Support</li>
-                    <li>🌀 Rotating Avatars</li>
-                </ul>
-                <button id="btn-team" class="btn-mode btn-team">👥 Play as Team</button>
-            </div>
         </div>
 
         <!-- Boss preview -->
@@ -96,31 +83,6 @@
             <div class="boss-preview-label">awaits...</div>
         </div>
     </main>
-</div>
-
-<!-- ═══════════════════════════════════════════════
-     SCREEN 2: DUCKRACE
-══════════════════════════════════════════════════ -->
-<div id="duckrace-screen" class="hidden">
-    <div class="duckrace-header">
-        <h2 class="duckrace-title">🦆 DUCKRACE — Set the Order!</h2>
-        <div class="duckrace-actions">
-            <button id="btn-duckrace-start" class="btn-primary">▶ Start Race!</button>
-            <button id="btn-duckrace-skip"  class="btn-secondary">⏩ Skip</button>
-            <button id="btn-duckrace-skip-to-game" class="btn-secondary">🎮 Skip & Play</button>
-        </div>
-    </div>
-
-    <div id="duckrace-track" class="duckrace-track">
-        <!-- Lanes injected by JS -->
-        <div class="finish-line">🏁</div>
-    </div>
-
-    <div id="duckrace-result" class="duckrace-result hidden">
-        <h3>🏆 Race Results!</h3>
-        <div id="duckrace-order" class="duckrace-order"></div>
-        <button id="btn-duckrace-play" class="btn-primary">⚔️ Start Game with this Order!</button>
-    </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════
@@ -418,121 +380,6 @@
         </div>
     </div>
 
-    <!-- ─────────────── TEAM LAYOUT ─────────────── -->
-    <div id="team-layout" class="solo-layout hidden">
-        
-        <!-- ARENA (Re-use Solo Arena styles) -->
-        <div class="solo-arena" id="team-arena">
-            <!-- Hero -->
-            <div id="hero-avatar-box-team" class="solo-hero">
-                <!-- LEFT: Mana & Skills -->
-                <div class="hero-stats-left">
-                    <div class="mana-mini">⚡<span id="mana-text-team">0</span></div>
-                    <div class="skills-label-mini">⚗️ Skills</div>
-                    <div id="hero-skills-team" class="hero-skills-row mini flex-col"></div>
-                </div>
-
-                <!-- CENTER: Avatar -->
-                <div class="hero-avatar-center">
-                    <div class="hero-aura team-aura"></div>
-                    <img id="hero-avatar-img-team" src="" class="hero-avatar-img-big" alt="Current Student">
-                    <div id="hero-fx-team" class="float-fx-layer"></div>
-                    <div id="card-lock-team" class="card-lock hidden">🔒 PARALYZED</div>
-                </div>
-
-                <!-- RIGHT: Combo Dots -->
-                <div class="hero-stats-right">
-                    <div class="combo-diamond-container team">
-                        <div class="combo-dot team top"></div>
-                        <div class="combo-dot team right"></div>
-                        <div class="combo-dot team bottom"></div>
-                        <div class="combo-dot team left"></div>
-                        <div class="combo-fusion-crystal team"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Boss -->
-            <div id="boss-avatar-box-team" class="solo-boss">
-                <div class="boss-avatar-media"></div>
-                <div id="boss-curse-team" class="boss-curse hidden">💀</div>
-                <div id="boss-fx-team" class="boss-effects-layer"></div>
-                <div class="boss-rage-compact">
-                    <span class="rage-label-small">💢 RAGE</span>
-                    <div class="boss-rage-bar-bg">
-                        <div id="boss-rage-bar-team" class="boss-rage-bar"></div>
-                    </div>
-                </div>
-            </div>
-            
-
-        </div>
-
-        <!-- BOTTOM: Controls & Cards -->
-        <div class="solo-bottom">
-            <!-- Quản trò controls -->
-            <div class="team-answer-btns" style="padding: 0; gap: 2rem;">
-                <button id="btn-team-wrong" class="potion-btn wrong-potion" title="Wrong (←)">
-                    <div class="potion-icon">🔴</div>
-                </button>
-                <button id="btn-mic" class="mic-btn" title="Toggle Microphone">
-                    🎤 <span id="mic-indicator" class="mic-pulse hidden">●</span>
-                </button>
-                <button id="btn-team-correct" class="potion-btn correct-potion" title="Correct (→)">
-                    <div class="potion-icon">🔵</div>
-                </button>
-            </div>
-
-            <!-- Right: Cards horizontal -->
-            <div class="solo-cards">
-                <div class="cards-row-h">
-                    <div id="team-card-wrapper-1" class="card-wrapper hidden">
-                        <div class="card">
-                            <div class="card-img-box"><img class="card-img" src="" alt=""></div>
-                            <div class="card-txt-box"><p class="card-txt"></p></div>
-                        </div>
-                    </div>
-                    <div id="team-card-wrapper-2" class="card-wrapper hidden">
-                        <div class="card">
-                            <div class="card-img-box"><img class="card-img" src="" alt=""></div>
-                            <div class="card-txt-box"><p class="card-txt"></p></div>
-                        </div>
-                    </div>
-                    <div id="team-card-wrapper-3" class="card-wrapper hidden">
-                        <div class="card">
-                            <div class="card-img-box"><img class="card-img" src="" alt=""></div>
-                            <div class="card-txt-box"><p class="card-txt"></p></div>
-                        </div>
-                    </div>
-                    <div id="team-card-wrapper-4" class="card-wrapper hidden">
-                        <div class="card">
-                            <div class="card-img-box"><img class="card-img" src="" alt=""></div>
-                            <div class="card-txt-box"><p class="card-txt"></p></div>
-                        </div>
-                    </div>
-                    <div id="team-card-wrapper-5" class="card-wrapper hidden">
-                        <div class="card">
-                            <div class="card-img-box"><img class="card-img" src="" alt=""></div>
-                            <div class="card-txt-box"><p class="card-txt"></p></div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Quiz Layout -->
-                <div id="quiz-container-team" class="quiz-container hidden">
-                    <div class="quiz-question-box">
-                        <img class="quiz-question-img hidden" src="" alt="">
-                        <p class="quiz-question-txt"></p>
-                    </div>
-                    <div class="quiz-options-row">
-                        <button class="quiz-option" data-idx="0" style="pointer-events: none;"><span class="quiz-key">A</span><span class="quiz-content"></span></button>
-                        <button class="quiz-option" data-idx="1" style="pointer-events: none;"><span class="quiz-key">B</span><span class="quiz-content"></span></button>
-                        <button class="quiz-option" data-idx="2" style="pointer-events: none;"><span class="quiz-key">C</span><span class="quiz-content"></span></button>
-                        <button class="quiz-option" data-idx="3" style="pointer-events: none;"><span class="quiz-key">D</span><span class="quiz-content"></span></button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Pause overlay -->
     <div id="pause-overlay" class="pause-overlay hidden">
@@ -748,7 +595,7 @@
                     </div>
                 </div>
 
-                <h4 class="settings-section-title">🎯 Solo & Team Mode</h4>
+                <h4 class="settings-section-title">🎯 Solo Mode</h4>
                 <div class="setting-group">
                     <h4>💢 Boss Rage (Solo Mode)</h4>
                     <label title="Số giây để thanh Rage đầy. Số lớn = Boss tung skill chậm = DỄ">Boss Rage Time (seconds)
@@ -768,15 +615,6 @@
                     </label>
                     <label title="Số lần đánh bóng tuyết để phá ảo ảnh Shadow Clone">Shadow Clone Hits (Số lần đánh để phá)
                         <input type="number" id="cfg-shadow-clone-hits" class="num-input" value="3" min="1" max="10">
-                    </label>
-                </div>
-                <div class="setting-group">
-                    <h4>👥 Team Mode</h4>
-                    <label>Turn mode
-                        <select id="cfg-team-turn-mode" class="select-input">
-                            <option value="duckrace">Duckrace order</option>
-                            <option value="random">Random spin</option>
-                        </select>
                     </label>
                 </div>
 
@@ -906,9 +744,9 @@
                     <label>Use Skill: <input type="text" id="key-p2Skill" class="key-input" value="Enter" maxlength="10"></label>
                 </div>
                 <div class="setting-group">
-                    <h4>👥 Team Mode (Quản Trò)</h4>
-                    <label>Correct: <input type="text" id="key-team-correct" class="key-input" value="ArrowRight" maxlength="20"></label>
-                    <label>Wrong:   <input type="text" id="key-team-wrong"   class="key-input" value="ArrowLeft"  maxlength="20"></label>
+                    <h4>⌨️ Quản Trò (dùng cho Timer & Team cũ)</h4>
+                    <label>Correct (Đúng): <input type="text" id="key-team-correct" class="key-input" value="ArrowRight" maxlength="20"></label>
+                    <label>Wrong (Sai):   <input type="text" id="key-team-wrong"   class="key-input" value="ArrowLeft"  maxlength="20"></label>
                 </div>
             </div>
         </div>
