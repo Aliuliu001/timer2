@@ -1520,6 +1520,7 @@ const Game = {
         // Mode select buttons
         document.getElementById('mode-card-solo')?.addEventListener('click', () => this.startGame('solo'));
         document.getElementById('mode-card-pvp')?.addEventListener('click',  () => this.startGame('pvp'));
+        document.getElementById('mode-card-timer')?.addEventListener('click', () => this.startGame('timer'));
 
         // Settings
         document.getElementById('btn-open-settings')?.addEventListener('click', () => this.openSettings());

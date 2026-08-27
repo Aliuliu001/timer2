@@ -47,8 +47,15 @@
 
 ---
 
-## 🗓️ Session 3 — T2: Thêm card Timer
-> (sẽ điền)
+## 🗓️ Session 3 — T2: Thêm card Timer  ✅ HOÀN THÀNH
+- [x] **index.html:** thêm `#mode-card-timer` (icon ⏱️, tên "Timer", mô tả, 3 tag, nút `#btn-timer`) sau card PvP.
+- [x] **js/game.js:** nối `mode-card-timer` → `startGame('timer')`.
+- [x] **Kiểm tra:** 9/9 file JS OK; card Timer xuất hiện; nút gọi đúng hàm. (Chưa có layout Timer → T3 sẽ làm, tạm thời bấm vào sẽ hiện màn hình trống, không crash.)
+- [x] **Push:** commit `T2 — add Timer mode card + button` → main.
+
+---
+
+## 🗓️ Session 4 — T3: Layout Timer (arena full-screen + đồng hồ)
 
 ---
 
