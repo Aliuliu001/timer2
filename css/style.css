@@ -2395,15 +2395,21 @@ body {
     align-items: flex-start;
     gap: 1.5rem;
     padding: 1rem 2rem;
-    z-index: 5;
+    position: relative;
+    z-index: 20;
 }
 .timer-clock-box {
     text-align: center;
-    background: rgba(15, 23, 42, 0.6);
-    border: 2px solid var(--gold, #F6C90E);
+    background: rgba(15, 23, 42, 0.85);
+    border: 3px solid var(--gold, #F6C90E);
     border-radius: 12px;
-    padding: 0.5rem 1.5rem;
-    box-shadow: 0 0 20px rgba(246, 201, 14, 0.3);
+    padding: 0.5rem 2rem;
+    box-shadow: 0 0 30px rgba(246, 201, 14, 0.5);
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
 }
 .timer-clock-label {
     font-size: 0.8rem;

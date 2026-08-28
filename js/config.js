@@ -95,6 +95,12 @@ const DEFAULT_CONFIG = {
 
     // Card display
     cardDisplay: 'both',      // 'both' | 'image' | 'text'
+
+    // ⏱️ Timer mode settings
+    timerBossUrl: '',         // link ảnh Boss riêng cho Timer
+    timerHeroUrl: '',         // link ảnh Hero riêng cho Timer (giống Boss)
+    timerTime: 120,           // thời gian đếm ngược (giây)
+    timerSkillMode: 'random', // 'random' | 'buffet'
 };
 
 const MASTER_SKILLS = {

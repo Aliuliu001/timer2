@@ -104,5 +104,12 @@
 
 ---
 
-## 🗓️ Session 11 — T10: Chạy thử & Push
+## 🗓️ Session 11 — T11: Dọn dẹp Settings + sửa 2 lỗi hiển thị Timer
+- **Nguyên nhân thật sự lỗi đồng hồ đứng (tìm ra qua test jsdom):** trong `startGame`, `UI.updateBossAvatar()` (dòng 257, KHÔNG có try/catch) nếu throw (vd ảnh Pinterest/CSP, hoặc Audio undefined) → `startGame` dừng TRƯỚC khi gọi `startTimer` → interval không tạo → đứng im. Đã bọc toàn bộ UI init trong try/catch → lỗi 1 hàm không làm chết game.
+- **Sửa lỗi Boss lộn góc:** Timer dùng hàm riêng `setTimerBossAvatar()` set vào `#timer-boss-box` (không đè qua `updateBossAvatar` chung nữa).
+- **Thêm nhóm "⚙️ Cài Đặt Timer"** trong tab Game: `cfg-timer-boss-url`, `cfg-timer-hero-url`, `cfg-timer-time`, `cfg-timer-skill-mode`. Đồng bộ config `timerBossUrl/timerHeroUrl/timerTime/timerSkillMode` (config.js + collectSettings + populateSettings).
+- **CSS:** `#timer-clock` → `position:fixed; top:10px; left:50%; z-index:9999` (không bị arena che); `.timer-topbar` z-index 20.
+- **Dọn debug:** bảng `#timer-debug` chỉ hiện khi có lỗi (không log mỗi tick nữa).
+- **Chưa tự test trên browser** (máy không có GUI) → chờ bạn Ctrl+Shift+R xác nhận Boss hiện + đồng hồ chạy.
+- Git: commit + push (v=10).
 > (sẽ điền)

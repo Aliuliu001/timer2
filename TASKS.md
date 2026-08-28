@@ -109,11 +109,27 @@ Mỗi task làm 1 mình, xong mới sang task sau. Chi tiết kế hoạch: `PLA
 
 ---
 
-## T10 — Chạy thử, sửa lỗi, dọn code, push GitHub
-- [ ] **Mục tiêu:** Game hoàn chỉnh, ổn định, đẩy lên GitHub.
-- [ ] **Việc cụ thể:**
-  - Mở thử Solo, PvP, Timer trên trình duyệt (check lỗi console).
-  - Dọn code thừa, comment rõ ràng.
-  - `git add -A && git commit -m "..." && git push` từng bước (hoặc 1 lần cuối).
-  - Báo cáo cho bạn cách chơi thử.
-- [ ] **Kiểm tra:** 3 chế độ chạy mượt, không lỗi, code đã push lên GitHub.
+## T11 — Dọn dẹp Settings + sửa 2 lỗi hiển thị Timer (làm sau T1–T9)
+- [x] **Thêm nhóm "⚙️ Cài Đặt Timer" vào tab Game:** link Boss, link Hero, thời gian, dạng kỹ năng.
+- [x] **Config:** thêm `timerBossUrl`, `timerHeroUrl`, `timerTime`, `timerSkillMode` (config.js + collectSettings + populateSettings).
+- [x] **Sửa lỗi Boss lộn góc:** Timer dùng hàm riêng `setTimerBossAvatar()` (không dùng chung `updateBossAvatar` nữa).
+- [x] **Sửa lỗi đồng hồ đứng:** bọc UI init trong startGame bằng try/catch (lỗi ảnh/CSP không làm chết startTimer); `#timer-clock` đặt `position:fixed` giữa trên, z-index 9999 không bị che; `.timer-topbar` z-index 20.
+- [x] **Dọn debug:** ẩn bảng debug mặc định (chỉ hiện khi lỗi), bỏ log mỗi tick.
+- [ ] **Kiểm tra:** Ctrl+Shift+R → Timer: Boss trái hiện đúng link, đồng hồ giữa đếm ngược rõ ràng.
+
+---
+
+## T12 — Thống nhất Hero avatar (link = full như Boss)
+- [ ] **Mục tiêu:** Bỏ khung tròn cố định. Hero (Solo + Timer) dùng 1 hàm `setAvatarMedia(el, value)`: link → ảnh full như Boss; số ID → khung tròn `Hero/N.png`.
+- [ ] Hợp nhất `updateHeroAvatar` + `setTimerBossAvatar` thành chung.
+- [ ] **Kiểm tra:** nhập link → Hero hiện full; nhập số → hiện khung tròn cũ.
+
+---
+
+## T13 → T19 (tiếp nối T4–T10 cũ, gọn hơn)
+- T13 — Lật/đảo chiều Boss (trái→phải) [cũ T5]
+- T14 — Tick/cross + mana (giới hạn 10) [cũ T6]
+- T15 — Kỹ năng Timer: Random + Buffet (thanh dưới) [cũ T7]
+- T16 — Luật thắng/thua + màn hình kết quả [cũ T8]
+- T17 — Chạy thử Solo/PvP/Timer, sửa lỗi, dọn code [cũ T10]
+

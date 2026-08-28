@@ -254,6 +254,9 @@ const Game = {
             });
         }
 
+        // ⚠️ Toàn bộ UI init bọc trong try/catch riêng biệt:
+        // nếu 1 hàm lỗi (vd: ảnh Pinterest CSP, Audio...) thì các bước sau + startTimer vẫn chạy.
+        try {
         UI.updateBossAvatar();
         if (mode === 'timer') {
             // Timer mode: chỉ cập nhật những gì cần, không gọi UI Solo/PvP
@@ -271,6 +274,7 @@ const Game = {
             UI.updateSkillsUI('p2');
             UI.renderCards();
         }
+        } catch(e) { console.warn('UI init failed (non-fatal):', e); }
 
         try {
             if (mode === 'solo') this.startSolo();
@@ -303,7 +307,6 @@ const Game = {
             if (!this.state.isRunning || this.state.isPaused || this.state.isGameOver) return;
             this.state.timeRemaining--;
             this.updateTimerClock();
-            this.showTimerDebug('tick clock -> ' + this.state.timeRemaining);
             if (this.state.timeRemaining <= 0) {
                 this.endGame('win');
             }
@@ -342,7 +345,7 @@ const Game = {
         } catch(e) { this.showTimerDebug('init err: ' + e.message); }
 
         // ── Avatars (bọc riêng) ──
-        try { UI.updateBossAvatar(); } catch(e) { this.showTimerDebug('bossAvatar err: ' + e.message); }
+        try { this.setTimerBossAvatar(); } catch(e) { this.showTimerDebug('bossAvatar err: ' + e.message); }
         try { this.updateTimerHeroAvatar(); } catch(e) { this.showTimerDebug('heroAvatar err: ' + e.message); }
         try { this.updateTimerClock(); } catch(e) {}
         try { this.updateTimerBossBar(); } catch(e) {}
@@ -351,23 +354,22 @@ const Game = {
     },
 
     showTimerDebug(msg) {
+        // Chỉ hiện khi có lỗi thực sự (để chẩn đoán), không log mỗi tick
+        if (!/err|NOT FOUND|fail|THREW/i.test(msg)) return;
         const el = document.getElementById('timer-debug');
         if (!el) return;
         el.classList.remove('hidden');
         const t = new Date().toLocaleTimeString();
-        el.textContent = `[${t}] ${msg}\n` + el.textContent.split('\n').slice(0, 8).join('\n');
+        el.textContent = `[${t}] ${msg}\n` + (el.textContent || '').split('\n').slice(0, 8).join('\n');
     },
 
     updateTimerClock() {
         const el = document.getElementById('timer-clock');
-        if (!el) { this.showTimerDebug('timer-clock NOT FOUND'); return; }
+        if (!el) return;
         const t = Math.max(0, this.state.timeRemaining);
         const m = String(Math.floor(t / 60)).padStart(2, '0');
         const s = String(t % 60).padStart(2, '0');
-        const txt = `${m}:${s}`;
-        el.textContent = txt;
-        el.style.color = '#ff0000'; // debug: đỏ để dễ thấy thay đổi
-        this.showTimerDebug('clock display = ' + txt + ' | el=' + (el ? 'yes' : 'no'));
+        el.textContent = `${m}:${s}`;
     },
 
     updateTimerBossBar() {
@@ -389,6 +391,26 @@ const Game = {
                 : `<img src="${url}" class="boss-media-el" onerror="window.Game.showTimerDebug('HERO img error: '+this.src)">`;
         } else {
             el.innerHTML = `<img src="https://placehold.co/200x200/1E3A8A/F6C90E?text=HERO" class="boss-media-el">`;
+        }
+    },
+
+    // Boss Timer dùng hàm RIÊNG (không dùng chung updateBossAvatar để tránh lộn ảnh vào góc)
+    setTimerBossAvatar() {
+        const el = document.querySelector('#timer-boss-box .boss-avatar-media');
+        if (!el) { this.showTimerDebug('timer-boss-media NOT FOUND'); return; }
+        // Ưu tiên link Timer riêng, nếu trống thì dùng link Boss chung
+        const url = this.config.timerBossUrl || this.config.bossThemeId;
+        this.showTimerDebug('boss timer url = ' + (url || '(rỗng→dùng mặc định)'));
+        if (url && (url.startsWith('http') || url.startsWith('data:'))) {
+            const isVideo = url.endsWith('.mp4') || url.endsWith('.webm');
+            el.innerHTML = isVideo
+                ? `<video src="${url}" autoplay loop muted playsinline class="boss-media-el"></video>`
+                : `<img src="${url}" class="boss-media-el" onerror="window.Game.showTimerDebug('BOSS img error: '+this.src)">`;
+        } else if (/^\d+$/.test(url || '')) {
+            // ID số → dùng iframe tenor (giữ tương thích cũ)
+            el.innerHTML = `<iframe src="https://tenor.com/embed/${url}" width="100%" height="100%" frameborder="0" scrolling="no" class="boss-media-el pointer-events-none" allowtransparency="true"></iframe>`;
+        } else {
+            el.innerHTML = `<img src="https://placehold.co/300x300/1e293b/ef4444?text=BOSS" class="boss-media-el">`;
         }
     },
 
@@ -1301,6 +1323,10 @@ const Game = {
         set('cfg-p2-avatar', cfg.p2AvatarUrl || '');
         set('cfg-p1-hero-id', cfg.p1HeroId || '1');
         set('cfg-p2-hero-id', cfg.p2HeroId || '2');
+        set('cfg-timer-boss-url', cfg.timerBossUrl || '');
+        set('cfg-timer-hero-url', cfg.timerHeroUrl || '');
+        set('cfg-timer-time', cfg.timerTime || 120);
+        set('cfg-timer-skill-mode', cfg.timerSkillMode || 'random');
         if (cfg.p1AvatarType === 'url') {
             const el = document.getElementById('cfg-p1-type-url');
             if (el) el.checked = true;
@@ -1441,6 +1467,12 @@ const Game = {
         
         cfg.bgUrl              = get('cfg-bg-url', '');
         cfg.bgOpacity          = getNum('cfg-bg-opacity', 0.3);
+
+        // ⏱️ Timer mode settings
+        cfg.timerBossUrl       = get('cfg-timer-boss-url', '');
+        cfg.timerHeroUrl       = get('cfg-timer-hero-url', '');
+        cfg.timerTime          = getInt('cfg-timer-time', 120);
+        cfg.timerSkillMode     = get('cfg-timer-skill-mode', 'random');
 
         // Skills
         Object.keys(MASTER_SKILLS).forEach(id => {
