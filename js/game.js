@@ -217,7 +217,7 @@ const Game = {
     // START GAME
     // ══════════════════════════════════════════
     startGame(mode) {
-        SFX.init();
+        try { SFX.init(); } catch(e) { console.warn('SFX.init failed', e); }
         this.config = Settings.loadConfig();
         this.rawCards = Settings.loadCards();
         Cards.load(this.rawCards);
@@ -226,8 +226,8 @@ const Game = {
         this.state.mode = mode;
         this.state.isRunning = true;
         
-        UI.renderMilestones();
-        this.playBGM();
+        try { UI.renderMilestones(); } catch(e) { console.warn('renderMilestones failed', e); }
+        try { this.playBGM(); } catch(e) { console.warn('playBGM failed', e); }
 
         // Show correct game layout
         document.getElementById('mode-select-screen').classList.add('hidden');
@@ -255,16 +255,22 @@ const Game = {
         }
 
         UI.updateBossAvatar();
-        UI.updateHeroAvatar(this.config.heroAvatarId || 1, 'solo');
-        UI.updateBossTrack();
-        UI.updateMana();
-        UI.updateMana('p1');
-        UI.updateMana('p2');
-        UI.updateCombo();
-        UI.updateSkillsUI('solo');
-        UI.updateSkillsUI('p1');
-        UI.updateSkillsUI('p2');
-        UI.renderCards();
+        if (mode === 'timer') {
+            // Timer mode: chỉ cập nhật những gì cần, không gọi UI Solo/PvP
+            this.updateTimerHeroAvatar();
+            UI.updateMana();
+        } else {
+            UI.updateHeroAvatar(this.config.heroAvatarId || 1, 'solo');
+            UI.updateBossTrack();
+            UI.updateMana();
+            UI.updateMana('p1');
+            UI.updateMana('p2');
+            UI.updateCombo();
+            UI.updateSkillsUI('solo');
+            UI.updateSkillsUI('p1');
+            UI.updateSkillsUI('p2');
+            UI.renderCards();
+        }
 
         if (mode === 'solo') this.startSolo();
         else if (mode === 'pvp') this.startPvP();

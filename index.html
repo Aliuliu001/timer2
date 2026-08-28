@@ -12,6 +12,23 @@
 </head>
 <body>
 
+<!-- Global error display (để bắt lỗi hiển thị lên màn hình thay vì đứng im) -->
+<div id="global-error" class="hidden" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:rgba(150,20,20,0.95);color:#fff;font-family:monospace;font-size:13px;padding:10px 14px;white-space:pre-wrap;max-height:40vh;overflow:auto;"></div>
+<script>
+window.addEventListener('error', function(e){
+  var box=document.getElementById('global-error');
+  if(!box) return;
+  box.classList.remove('hidden');
+  box.textContent='🐞 LỖI: '+(e.message||e.error||'unknown')+'\n'+(e.filename||'')+':'+(e.lineno||'');
+});
+window.addEventListener('unhandledrejection', function(e){
+  var box=document.getElementById('global-error');
+  if(!box) return;
+  box.classList.remove('hidden');
+  box.textContent='🐞 LỖI (promise): '+(e.reason&&e.reason.message?e.reason.message:e.reason);
+});
+</script>
+
 
 <!-- ═══════════════════════════════════════════════
      GLOBAL LAYERS
