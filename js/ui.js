@@ -770,7 +770,7 @@ const UI = {
                 const powerup = document.createElement('img');
                 powerup.className = 'boss-powerup';
                 // try gif first
-                powerup.src = './assets/powerup.gif';
+                powerup.src = './assets/power_up.gif';
                 powerup.onerror = () => {
                     // fallback to png
                     powerup.onerror = () => {

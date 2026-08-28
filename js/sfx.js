@@ -120,7 +120,7 @@ const SFX = {
     
     roar() {
         if (!this.enabled || !this.ctx) return;
-        const audio = new Audio('./sounds/Roar.mp3');
+        const audio = new Audio('./sounds/roar.mp3');
         audio.volume = 0.8;
         audio.onerror = () => {
             const wavAudio = new Audio('./sounds/Roar.wav');
