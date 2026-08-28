@@ -2454,13 +2454,13 @@ body {
 
 /* Boss bên trái */
 .timer-boss {
-    position: absolute;
-    left: 3%;
+    position: fixed;
+    left: 2%;
     top: 50%;
     transform: translateY(-50%);
-    width: 200px;
-    height: 200px;
-    z-index: 3;
+    width: 220px;
+    height: 220px;
+    z-index: 30;
 }
 .timer-boss .boss-avatar-media {
     width: 100%;
@@ -2468,6 +2468,7 @@ body {
     border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+    border: 3px solid #ef4444;
 }
 
 /* Ảnh/video bên trong avatar (dùng chung cho Boss và Hero Timer) */
@@ -2483,13 +2484,13 @@ body {
 
 /* Hero bên phải */
 .timer-hero {
-    position: absolute;
-    right: 3%;
+    position: fixed;
+    right: 2%;
     top: 50%;
     transform: translateY(-50%);
-    width: 200px;
-    height: 200px;
-    z-index: 3;
+    width: 220px;
+    height: 220px;
+    z-index: 30;
 }
 .timer-hero-media {
     width: 100%;
@@ -2498,6 +2499,7 @@ body {
     overflow: hidden;
     box-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
     background: rgba(15, 23, 42, 0.5);
+    border: 3px solid #22D3EE;
 }
 .timer-hero-media img,
 .timer-hero-media video,
