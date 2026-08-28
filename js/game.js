@@ -382,15 +382,15 @@ const Game = {
     updateTimerHeroAvatar() {
         const el = document.querySelector('#timer-hero-box .timer-hero-media');
         if (!el) { this.showTimerDebug('timer-hero-media NOT FOUND'); return; }
-        const url = this.config.timerHeroUrl;
+        const url = this.config.timerHeroUrl || 'assets/timer-boss.gif';
         this.showTimerDebug('hero url = ' + (url || '(rỗng→dùng mặc định)'));
-        if (url && (url.startsWith('http') || url.startsWith('data:'))) {
+        if (url && (url.startsWith('http') || url.startsWith('data:') || url.startsWith('assets/'))) {
             const isVideo = url.endsWith('.mp4') || url.endsWith('.webm');
             el.innerHTML = isVideo
                 ? `<video src="${url}" autoplay loop muted playsinline class="boss-media-el"></video>`
-                : `<img src="${url}" class="boss-media-el" onerror="window.Game.showTimerDebug('HERO img error: '+this.src)">`;
+                : `<img src="${url}" class="boss-media-el" onerror="this.src='assets/timer-boss.gif'">`;
         } else {
-            el.innerHTML = `<img src="https://placehold.co/200x200/1E3A8A/F6C90E?text=HERO" class="boss-media-el">`;
+            el.innerHTML = `<img src="assets/timer-boss.gif" class="boss-media-el">`;
         }
     },
 
@@ -398,19 +398,19 @@ const Game = {
     setTimerBossAvatar() {
         const el = document.querySelector('#timer-boss-box .boss-avatar-media');
         if (!el) { this.showTimerDebug('timer-boss-media NOT FOUND'); return; }
-        // Ưu tiên link Timer riêng, nếu trống thì dùng link Boss chung
-        const url = this.config.timerBossUrl || this.config.bossThemeId;
+        // Ưu tiên: link Timer riêng → link Boss chung → ảnh mặc định trong repo (luôn hiện được)
+        const url = this.config.timerBossUrl || this.config.bossThemeId || 'assets/timer-boss.gif';
         this.showTimerDebug('boss timer url = ' + (url || '(rỗng→dùng mặc định)'));
-        if (url && (url.startsWith('http') || url.startsWith('data:'))) {
+        if (url && (url.startsWith('http') || url.startsWith('data:') || url.startsWith('assets/'))) {
             const isVideo = url.endsWith('.mp4') || url.endsWith('.webm');
             el.innerHTML = isVideo
                 ? `<video src="${url}" autoplay loop muted playsinline class="boss-media-el"></video>`
-                : `<img src="${url}" class="boss-media-el" onerror="window.Game.showTimerDebug('BOSS img error: '+this.src)">`;
+                : `<img src="${url}" class="boss-media-el" onerror="this.src='assets/timer-boss.gif'">`;
         } else if (/^\d+$/.test(url || '')) {
             // ID số → dùng iframe tenor (giữ tương thích cũ)
             el.innerHTML = `<iframe src="https://tenor.com/embed/${url}" width="100%" height="100%" frameborder="0" scrolling="no" class="boss-media-el pointer-events-none" allowtransparency="true"></iframe>`;
         } else {
-            el.innerHTML = `<img src="https://placehold.co/300x300/1e293b/ef4444?text=BOSS" class="boss-media-el">`;
+            el.innerHTML = `<img src="assets/timer-boss.gif" class="boss-media-el">`;
         }
     },
 
