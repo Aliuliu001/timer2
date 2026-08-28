@@ -295,42 +295,27 @@ const Game = {
     startTimer() {
         // Timer mode: Boss tự tiến từ trái sang phải, quản trò bấm Đúng/Sai để cộng mana.
         // Thắng khi hết giờ mà Boss chưa chạm Hero. Thua khi Boss chạm Hero.
-        this.state.timeRemaining = this.config.timerTime || this.config.bossTime || 120;
-        this.state.boss.position = this.state.boss.maxPosition;
-        this.state.boss.speedMult = 1.0;
-        this.state.boss.frozen = false;
-        this.state.boss.paralyzed = false;
-        this.state.boss.sleeping = false;
-        this.state.boss.slowed = 0;
-        this.state.boss.blind = false;
-        this.state.boss.scaleLevel = 0;
-        this.state.mana = 0;
-        UI.updateMana();
-        UI.updateBossAvatar();          // fills .boss-avatar-media (cả Timer)
-        this.updateTimerHeroAvatar();    // fills .timer-hero-media
-        this.updateTimerClock();
-        this.updateTimerBossBar();
+        // BULLETPROOF: tạo interval trước, init sau (nếu init lỗi thì đồng hồ vẫn chạy).
+        this.showTimerDebug('startTimer called');
 
-        // Đếm ngược thời gian
+        // ── Tạo interval TRƯỚC (quan trọng: dù init lỗi, đồng hồ vẫn chạy) ──
         this.state.gameTimerInterval = setInterval(() => {
             if (!this.state.isRunning || this.state.isPaused || this.state.isGameOver) return;
             this.state.timeRemaining--;
             this.updateTimerClock();
+            this.showTimerDebug('tick clock -> ' + this.state.timeRemaining);
             if (this.state.timeRemaining <= 0) {
-                this.endGame('win');   // hết giờ mà chưa thua = THẮNG
+                this.endGame('win');
             }
         }, 1000);
 
-        // Boss tiến tới (100ms tick)
         this.state.bossMovementInterval = setInterval(() => {
             if (!this.state.isRunning || this.state.isPaused || this.state.isGameOver) return;
             const boss = this.state.boss;
             if (boss.frozen || boss.paralyzed || boss.sleeping) return;
-
             let speed = (this.config.bossBaseSpeed || 1) * boss.speedMult;
             if (boss.slowed > 0) speed *= (1 - boss.slowed);
-
-            boss.position -= speed * 0.1;   // về 0 = chạm Hero = thua
+            boss.position -= speed * 0.1;
             if (boss.position <= 0) {
                 boss.position = 0;
                 this.updateTimerBossBar();
@@ -340,6 +325,37 @@ const Game = {
             if (boss.position > boss.maxPosition) boss.position = boss.maxPosition;
             this.updateTimerBossBar();
         }, 100);
+
+        // ── Init state (bọc riêng, lỗi không làm chết interval) ──
+        try {
+            this.state.timeRemaining = this.config.timerTime || this.config.bossTime || 120;
+            this.state.boss.position = this.state.boss.maxPosition;
+            this.state.boss.speedMult = 1.0;
+            this.state.boss.frozen = false;
+            this.state.boss.paralyzed = false;
+            this.state.boss.sleeping = false;
+            this.state.boss.slowed = 0;
+            this.state.boss.blind = false;
+            this.state.boss.scaleLevel = 0;
+            this.state.mana = 0;
+            UI.updateMana();
+        } catch(e) { this.showTimerDebug('init err: ' + e.message); }
+
+        // ── Avatars (bọc riêng) ──
+        try { UI.updateBossAvatar(); } catch(e) { this.showTimerDebug('bossAvatar err: ' + e.message); }
+        try { this.updateTimerHeroAvatar(); } catch(e) { this.showTimerDebug('heroAvatar err: ' + e.message); }
+        try { this.updateTimerClock(); } catch(e) {}
+        try { this.updateTimerBossBar(); } catch(e) {}
+
+        this.showTimerDebug('startTimer done. timeRemaining=' + this.state.timeRemaining + ' bossMax=' + this.state.boss.maxPosition);
+    },
+
+    showTimerDebug(msg) {
+        const el = document.getElementById('timer-debug');
+        if (!el) return;
+        el.classList.remove('hidden');
+        const t = new Date().toLocaleTimeString();
+        el.textContent = `[${t}] ${msg}\n` + el.textContent.split('\n').slice(0, 8).join('\n');
     },
 
     updateTimerClock() {
