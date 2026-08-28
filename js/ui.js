@@ -881,6 +881,8 @@ const UI = {
             c.innerHTML = html;
             c.classList.toggle('flipped', !!Game.config.bossFlip);
         });
+        // Debug: báo link Boss đang dùng (để chẩn đoán ảnh không hiện)
+        if (window.Game) window.Game.showTimerDebug('boss avatar set. isUrl=' + isUrl + ' src=' + (isUrl ? val : '(tenor iframe)'));
     },
 
     // ──────────────── LEADERBOARD ────────────────

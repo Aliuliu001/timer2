@@ -379,15 +379,16 @@ const Game = {
 
     updateTimerHeroAvatar() {
         const el = document.querySelector('#timer-hero-box .timer-hero-media');
-        if (!el) return;
+        if (!el) { this.showTimerDebug('timer-hero-media NOT FOUND'); return; }
         const url = this.config.timerHeroUrl;
+        this.showTimerDebug('hero url = ' + (url || '(rỗng→dùng mặc định)'));
         if (url && (url.startsWith('http') || url.startsWith('data:'))) {
             const isVideo = url.endsWith('.mp4') || url.endsWith('.webm');
             el.innerHTML = isVideo
-                ? `<video src="${url}" autoplay loop muted playsinline></video>`
-                : `<img src="${url}" onerror="this.src='https://placehold.co/200x200/1E3A8A/F6C90E?text=HERO';">`;
+                ? `<video src="${url}" autoplay loop muted playsinline class="boss-media-el"></video>`
+                : `<img src="${url}" class="boss-media-el" onerror="window.Game.showTimerDebug('HERO img error: '+this.src)">`;
         } else {
-            el.innerHTML = `<img src="https://placehold.co/200x200/1E3A8A/F6C90E?text=HERO">`;
+            el.innerHTML = `<img src="https://placehold.co/200x200/1E3A8A/F6C90E?text=HERO" class="boss-media-el">`;
         }
     },
 
