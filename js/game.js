@@ -360,11 +360,14 @@ const Game = {
 
     updateTimerClock() {
         const el = document.getElementById('timer-clock');
-        if (!el) return;
+        if (!el) { this.showTimerDebug('timer-clock NOT FOUND'); return; }
         const t = Math.max(0, this.state.timeRemaining);
         const m = String(Math.floor(t / 60)).padStart(2, '0');
         const s = String(t % 60).padStart(2, '0');
-        el.textContent = `${m}:${s}`;
+        const txt = `${m}:${s}`;
+        el.textContent = txt;
+        el.style.color = '#ff0000'; // debug: đỏ để dễ thấy thay đổi
+        this.showTimerDebug('clock display = ' + txt + ' | el=' + (el ? 'yes' : 'no'));
     },
 
     updateTimerBossBar() {

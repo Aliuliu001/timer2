@@ -2464,6 +2464,17 @@ body {
     box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
 }
 
+/* Ảnh/video bên trong avatar (dùng chung cho Boss và Hero Timer) */
+.boss-media-el,
+.timer-hero-media img,
+.timer-hero-media video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: inherit;
+}
+
 /* Hero bên phải */
 .timer-hero {
     position: absolute;

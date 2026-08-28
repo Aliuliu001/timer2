@@ -867,9 +867,9 @@ const UI = {
         if (isUrl) {
             // Link ảnh/video trực tiếp (Pinterest, Google, tenor gif, ...)
             if (isVideo) {
-                html = `<video src="${val}" autoplay loop muted playsinline class="w-full h-full object-cover pointer-events-none"></video>`;
+                html = `<video src="${val}" autoplay loop muted playsinline class="boss-media-el"></video>`;
             } else {
-                html = `<img src="${val}" class="w-full h-full object-cover pointer-events-none" onerror="this.src='https://placehold.co/300x300/1e293b/ef4444?text=BOSS'">`;
+                html = `<img src="${val}" class="boss-media-el" onerror="this.src='https://placehold.co/300x300/1e293b/ef4444?text=BOSS'">`;
             }
         } else {
             // Chỉ khi là ID thuần (Tenor số) mới dùng iframe
