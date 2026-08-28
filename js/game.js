@@ -272,9 +272,15 @@ const Game = {
             UI.renderCards();
         }
 
-        if (mode === 'solo') this.startSolo();
-        else if (mode === 'pvp') this.startPvP();
-        else if (mode === 'timer') this.startTimer();
+        try {
+            if (mode === 'solo') this.startSolo();
+            else if (mode === 'pvp') this.startPvP();
+            else if (mode === 'timer') this.startTimer();
+        } catch(e) {
+            console.error('start mode error:', e);
+            const box=document.getElementById('global-error');
+            if(box){ box.classList.remove('hidden'); box.textContent='🐞 Lỗi khởi tạo ('+mode+'): '+(e&&e.message||e)+'\n'+(e&&e.stack?e.stack.split('\n').slice(0,3).join('\n'):''); }
+        }
     },
 
     // ══════════════════════════════════════════
