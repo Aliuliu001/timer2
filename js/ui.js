@@ -860,15 +860,22 @@ const UI = {
     // ──────────────── BOSS AVATAR ────────────────
     updateBossAvatar() {
         const containers = document.querySelectorAll('.boss-avatar-media');
-        const val = Game.config.bossThemeId || '12582594';
-        const tenorMatch = val.match(/(\d{6,})/);
-        const isNumeric = /^\d+$/.test(val.trim());
+        const val = (Game.config.bossThemeId || '12582594').trim();
+        const isUrl = val.startsWith('http') || val.startsWith('data:');
+        const isVideo = val.endsWith('.mp4') || val.endsWith('.webm');
         let html = '';
-        if (isNumeric || tenorMatch) {
-            const id = isNumeric ? val : tenorMatch[1];
-            html = `<iframe src="https://tenor.com/embed/${id}" width="100%" height="100%" frameborder="0" scrolling="no" class="pointer-events-none" allowtransparency="true"></iframe>`;
+        if (isUrl) {
+            // Link ảnh/video trực tiếp (Pinterest, Google, tenor gif, ...)
+            if (isVideo) {
+                html = `<video src="${val}" autoplay loop muted playsinline class="w-full h-full object-cover pointer-events-none"></video>`;
+            } else {
+                html = `<img src="${val}" class="w-full h-full object-cover pointer-events-none" onerror="this.src='https://placehold.co/300x300/1e293b/ef4444?text=BOSS'">`;
+            }
         } else {
-            html = `<img src="${val}" class="w-full h-full object-cover pointer-events-none" onerror="this.src='https://placehold.co/300x300/1e293b/ef4444?text=BOSS'">`;
+            // Chỉ khi là ID thuần (Tenor số) mới dùng iframe
+            const tenorMatch = val.match(/tenor\.com\/embed\/(\d+)/);
+            const id = tenorMatch ? tenorMatch[1] : (/\d{6,}/.test(val) ? val.match(/\d{6,}/)[0] : val);
+            html = `<iframe src="https://tenor.com/embed/${id}" width="100%" height="100%" frameborder="0" scrolling="no" class="pointer-events-none" allowtransparency="true"></iframe>`;
         }
         containers.forEach(c => {
             c.innerHTML = html;
