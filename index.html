@@ -17,14 +17,15 @@
   body{
     font-family:'Segoe UI',Tahoma,Verdana,sans-serif;
     background:var(--bg); color:#fff;
-    margin:0; padding:12px; min-height:100vh;
+    margin:0; padding:12px 24px; min-height:100vh;
     display:flex; flex-direction:column; align-items:center; gap:12px;
+    overflow-x:hidden;
   }
   .hidden{display:none !important}
   button{cursor:pointer; font-weight:bold; border:none; border-radius:10px}
 
   /* ---------- TOP BAR ---------- */
-  #topbar{width:100%; max-width:900px; display:flex; align-items:center; gap:10px}
+  #topbar{width:100%; max-width:1280px; display:flex; align-items:center; gap:10px}
   #topbar h1{font-size:18px; margin:0; flex:1}
   #btn-fullscreen{background:#2c3e50; color:#fff; padding:8px 12px; font-size:13px}
 
@@ -35,7 +36,7 @@
 
   .panel{
     background:var(--panel); color:var(--ink);
-    width:100%; max-width:900px; border-radius:12px; padding:16px 20px;
+    width:100%; max-width:1100px; border-radius:12px; padding:16px 20px;
     box-shadow:0 5px 15px rgba(0,0,0,.35);
   }
   .panel h2{margin:0 0 10px 0; font-size:18px}
@@ -73,9 +74,27 @@
   .gallery .pick.sel .tick{display:block}
   .flip-row{display:flex; gap:8px; align-items:center; font-size:13px; margin:4px 0}
   .flip-row button{background:#3498db; color:#fff; padding:6px 12px; font-size:13px}
+  /* Mirror flip (face right), bg-blend, projectile, setup sub-tabs */
+  .fighter.mirrored{transform:scaleX(-1)}
+  .fighter.rmwhite img{mix-blend-mode:multiply}
+  #projectile{position:absolute; bottom:100px; font-size:46px; z-index:20; transition:left .7s linear; pointer-events:none}
+  .setup-tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px}
+  .setup-tabs button{background:#ecf0f1; color:#222; padding:8px 12px; font-size:13px}
+  .setup-tabs button.active{background:#3498db; color:#fff}
+  /* Time bar: never overflow */
+  .bossbar-wrap{width:100%; min-width:0}
+  .bossbar-wrap .face{flex-shrink:0}
+  .progress-container{min-width:0; overflow:hidden}
+  /* Wide screen (14 inch): wider arena + 2-column control deck */
+  @media(min-width:1000px){
+    #arena{aspect-ratio:21/8}
+    #deck{display:grid; grid-template-columns:1fr 1.2fr; gap:12px}
+    #judge-row{grid-column:1/-1}
+    #combo-banner{grid-column:1/-1}
+  }
 
   /* ---------- ARENA SCREEN ---------- */
-  #screen-arena{width:100%; max-width:900px; display:flex; flex-direction:column; gap:10px}
+  #screen-arena{width:100%; max-width:1280px; display:flex; flex-direction:column; gap:10px}
   #clock-display{
     font-size:44px; font-weight:bold; font-family:monospace; text-align:center;
     background:#fff; color:#222; border-radius:14px; padding:4px 24px; align-self:center;
@@ -196,6 +215,17 @@
 
 <!-- ============ SETUP SCREEN (time, appearance, slideshow, food, sound) ============ -->
 <div id="screen-setup" class="panel">
+  <h2>Cài đặt</h2>
+  <div class="setup-tabs">
+    <button id="spb-time" class="active" onclick="showPane('time')">⏱ Giờ</button>
+    <button id="spb-boss" onclick="showPane('boss')">👹 Boss</button>
+    <button id="spb-hero" onclick="showPane('hero')">🦸 Player</button>
+    <button id="spb-combo" onclick="showPane('combo')">🍔 Combo</button>
+    <button id="spb-bg" onclick="showPane('bg')">🌳 Nền+Nhạc</button>
+    <button id="spb-slide" onclick="showPane('slide')">🖼 Chiếu hình</button>
+    <button id="spb-keys" onclick="showPane('keys')">⌨ Nút bấm</button>
+  </div>
+  <div class="setup-pane" id="sp-time">
   <h2>Cài đặt thời gian</h2>
   <div class="row preset" id="time-presets">
     <button onclick="setPreset(120,this)">2 phút</button>
@@ -209,25 +239,40 @@
     <div><input type="number" id="input-s" min="0" value="0"><label>Giây</label></div>
   </div>
 
+  </div>
+  <div class="setup-pane hidden" id="sp-boss">
   <fieldset>
     <legend>Boss (trái) — bấm tick chọn 1 hình</legend>
     <label>Dán thêm link Boss mới: <input type="text" id="boss-url" placeholder="https://..."></label>
     <div class="gallery" id="boss-gallery"></div>
-    <div class="flip-row"><button onclick="toggleFlip('boss')">⇋ Lật ngang Boss</button><span id="boss-flip-state">Đang: không lật</span></div>
+    <div class="flip-row"><button onclick="toggleFlip('boss')">⇋ Lật ngang Boss (quay mặt qua phải)</button><span id="boss-flip-state">Đang: đã lật (nhìn qua phải)</span></div>
+    <label><input type="checkbox" id="boss-rmwhite" checked> Xóa nền trắng của Boss (nếu ảnh có nền trắng)</label>
   </fieldset>
 
+  </div>
+  <div class="setup-pane hidden" id="sp-hero">
   <fieldset>
     <legend>Player (phải) — bấm tick chọn 1 hình</legend>
     <label>Dán thêm link Player mới: <input type="text" id="hero-url" placeholder="https://..."></label>
     <div class="gallery" id="hero-gallery"></div>
-    <div class="flip-row"><button onclick="toggleFlip('hero')">⇋ Lật ngang Player</button><span id="hero-flip-state">Đang: không lật</span></div>
+    <div class="flip-row"><button onclick="toggleFlip('hero')">⇋ Lật ngang Player</button><span id="hero-flip-state">Đang: chưa lật</span></div>
   </fieldset>
+  </div>
+  <div class="setup-pane hidden" id="sp-combo">
+  <fieldset>
+    <legend>Combo 5 — tự ném 1 🍔 về Boss, trúng thì hiện hình ăn (tick chọn 1)</legend>
+    <div class="gallery" id="combo-gallery"></div>
+  </fieldset>
+  </div>
+  <div class="setup-pane hidden" id="sp-bg">
 
   <fieldset>
     <legend>Nền (mặc định rừng sáng vui mắt)</legend>
     <label>Dán link nền (trống = dùng rừng sáng có sẵn): <input type="text" id="bg-url" placeholder="https://..."></label>
   </fieldset>
 
+  </div>
+  <div class="setup-pane hidden" id="sp-slide">
   <fieldset>
     <legend>Hình trình chiếu (chỉ hiện ở đây, màn chơi không hiện)</legend>
     <div class="row">
@@ -246,7 +291,8 @@
       <button class="nav-btn next" onclick="changeSlide(1)">&#10095;</button>
     </div>
   </fieldset>
-
+  </div>
+  <div class="setup-pane hidden" id="sp-keys">
   <fieldset>
     <legend>Phím + chuột (cả 3 cùng chạy, chung 1 ruột đúng/sai)</legend>
     <label>Phím ĐÚNG: <input type="text" id="key-correct" value="ArrowRight" style="width:140px"></label>
@@ -259,7 +305,7 @@
     <label>Nhạc nền (mp3): <input type="file" id="bgm-file" accept="audio/*"></label>
     <div class="row"><button class="btn-add" onclick="toggleBgm()">Phát / Dừng nhạc nền</button></div>
   </fieldset>
-
+  </div>
   <div class="buttons row">
     <button id="btn-start" onclick="startArena()">Bắt đầu chơi ▶</button>
   </div>
@@ -279,6 +325,7 @@
     <div class="ground"></div>
     <div class="fighter" id="boss"><img id="boss-img" alt="Boss"></div>
     <div class="fighter" id="hero"><img id="hero-img" alt="Hero"></div>
+    <div id="projectile" class="hidden">🍔</div>
     <div id="status-badge" class="hidden">🍽️<small id="status-time"></small></div>
     <div id="love-text" class="hidden">I love you, Ms. Vi</div>
   </div>
@@ -323,7 +370,20 @@ const HERO_CHOICES = [
   {name:'Player 4', src:'assets/hero/player4.gif'},
 ];
 let selBoss = BOSS_CHOICES[0].src, selHero = HERO_CHOICES[0].src;
-let flipBoss = false, flipHero = false;
+let flipBoss = true, flipHero = false;
+let rmWhiteBoss = true;
+const COMBO_CHOICES = [
+  {name:'Ăn 1', src:'assets/combo/eat1.gif'},
+  {name:'Ăn 2', src:'assets/combo/eat2.gif'},
+  {name:'Ăn 3', src:'assets/combo/eat3.gif'},
+];
+let selCombo = COMBO_CHOICES[0].src;
+function showPane(name){
+  ['time','boss','hero','combo','bg','slide','keys'].forEach(p=>{
+    $('sp-'+p).classList.toggle('hidden', p!==name);
+    $('spb-'+p).classList.toggle('active', p===name);
+  });
+}
 // ONE array drives all food items. To add item 7, copy one object. No logic change.
 const FOOD_ITEMS = [
   {id:'pizza',   name:'Pizza',     icon:'🍕', price:5, eatSeconds:6, effect:'none',   eatingImage:'', afterImage:''},
@@ -404,9 +464,11 @@ function startArena(){
   const b=$('boss-url').value.trim()||selBoss, hh=$('hero-url').value.trim()||selHero;
   const bg=$('bg-url').value.trim();
   const bossSrc=b||'assets/boss/boss1.gif', heroSrc=hh||'assets/hero/player1.gif';
+  rmWhiteBoss=$('boss-rmwhite')?$('boss-rmwhite').checked:true;
   $('boss-img').src=bossSrc; $('hero-img').src=heroSrc;
-  $('boss-img').style.transform=flipBoss?'scaleX(-1)':'none';
-  $('hero-img').style.transform=flipHero?'scaleX(-1)':'none';
+  $('boss').classList.toggle('mirrored', flipBoss);
+  $('boss').classList.toggle('rmwhite', rmWhiteBoss);
+  $('hero').classList.toggle('mirrored', flipHero);
   $('boss-face').src=bossSrc; $('hero-face').src=heroSrc;
   $('bg-layer').style.backgroundImage=bg?`url("${bg}")`:'url("assets/bg/jungle.jpg")';
   // Reset state
@@ -488,13 +550,12 @@ function onCorrect(){
   if($('screen-arena').classList.contains('hidden')) return;
   mana=Math.min(10,mana+1); combo++;
   if(combo>=5){
-    combo=0; mana=Math.min(10,mana); // free gift does not cost mana
-    const pick=FOOD_ITEMS[Math.floor(Math.random()*FOOD_ITEMS.length)];
+    combo=0; // free gift does not cost mana
     const banner=$('combo-banner');
-    banner.textContent='🎉 COMBO 5! Tặng 1 món miễn phí: '+pick.icon+' '+pick.name;
+    banner.textContent='🎉 COMBO 5! Ném 🍔 về Boss!';
     banner.classList.remove('hidden');
     setTimeout(()=>banner.classList.add('hidden'),2500);
-    applyFood(pick.id, true);
+    throwBurger();
   }
   updateMeters(); renderShop();
 }
@@ -613,6 +674,17 @@ function renderGallery(){
     d.onclick=()=>{ selHero=c.src; $('hero-url').value=''; renderGallery(); };
     hg.appendChild(d);
   });
+  const cg=$('combo-gallery');
+  if(cg){
+    cg.innerHTML='';
+    COMBO_CHOICES.forEach((c)=>{
+      const d=document.createElement('div');
+      d.className='pick'+(selCombo===c.src?' sel':'');
+      d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>';
+      d.onclick=()=>{ selCombo=c.src; renderGallery(); };
+      cg.appendChild(d);
+    });
+  }
 }
 function addPastedLinks(){
   const b=$('boss-url').value.trim();
@@ -621,8 +693,35 @@ function addPastedLinks(){
   if(h && !HERO_CHOICES.some(c=>c.src===h)) HERO_CHOICES.push({name:'Link mới', src:h});
 }
 function toggleFlip(who){
-  if(who==='boss'){ flipBoss=!flipBoss; $('boss-flip-state').textContent='Đang: '+(flipBoss?'đã lật':'không lật'); }
-  else { flipHero=!flipHero; $('hero-flip-state').textContent='Đang: '+(flipHero?'đã lật':'không lật'); }
+  if(who==='boss'){ flipBoss=!flipBoss; $('boss-flip-state').textContent='Đang: '+(flipBoss?'đã lật (nhìn qua phải)':'chưa lật (nhìn qua trái)'); $('boss').classList.toggle('mirrored', flipBoss); }
+  else { flipHero=!flipHero; $('hero-flip-state').textContent='Đang: '+(flipHero?'đã lật':'chưa lật'); $('hero').classList.toggle('mirrored', flipHero); }
+}
+// Combo-5: auto-throw 1 hamburger from Hero to Boss, on hit show chosen eating image.
+function throwBurger(){
+  const arena=$('arena'), proj=$('projectile');
+  const bossBox=$('boss'), heroBox=$('hero');
+  const ax=arena.clientWidth;
+  const bx=bossBox.offsetLeft+40, hx=ax-80;
+  proj.classList.remove('hidden');
+  proj.style.left=hx+'px';
+  // force reflow then slide to boss
+  void proj.offsetWidth;
+  proj.style.left=bx+'px';
+  setTimeout(()=>{
+    proj.classList.add('hidden');
+    // Hit: freeze boss 4s + swap to chosen eating image, then restore.
+    const now=performance.now();
+    const bossImg=$('boss-img'), badge=$('status-badge');
+    const keepSrc=$('boss-url').value.trim()||selBoss||'assets/boss/boss1.gif';
+    bossImg.src=selCombo||'assets/combo/eat1.gif';
+    bossFrozenUntil=now+4000;
+    badge.innerHTML='🍔<small id="status-time"></small>';
+    badge.classList.remove('hidden');
+    setTimeout(()=>{
+      bossImg.src=keepSrc;
+      badge.classList.add('hidden');
+    }, 4000);
+  }, 750);
 }
 renderGallery(); renderShop(); updateSlideView();
 </script>
