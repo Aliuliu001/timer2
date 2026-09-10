@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -93,6 +93,9 @@
     #deck{display:grid; grid-template-columns:1fr 1.2fr; gap:8px; padding:8px}
     #judge-row{grid-column:1/-1}
     #combo-banner{grid-column:1/-1}
+    #meter-row{grid-column:1/-1}
+    #shop{grid-column:1/-1}
+    #food-shop{grid-column:1/-1}
   }
   /* Control deck compact: everything visible on 14 inch */
   #judge-row{display:flex; gap:10px}
@@ -174,12 +177,12 @@
   #judge-row{display:flex; gap:10px}
   #btn-correct{flex:1; background:var(--accent); color:#fff; font-size:24px; padding:16px}
   #btn-wrong{flex:1; background:var(--danger); color:#fff; font-size:24px; padding:16px}
-  #meter-row{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
-  #mana-dots{font-size:24px; letter-spacing:2px}
-  #combo-label{font-weight:bold; font-size:16px}
+  #meter-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  #mana-label{font-weight:bold; font-size:18px; display:flex; align-items:center; gap:6px}
   #combo-banner{background:#fff3bf; border-radius:10px; padding:6px 12px; font-weight:bold; text-align:center}
-  /* Shop: 6 food cards, one shared style (framework) */
-  #shop{display:grid; grid-template-columns:repeat(6,1fr); gap:8px}
+  /* Shop: ONE row for skills, ONE row for food (compact, more room for Boss/Player) */
+  #shop{display:flex; gap:6px; overflow-x:auto}
+  #food-shop{display:flex; gap:6px; margin-top:6px; overflow-x:auto}
   .food-card{
     background:#f1f3f5; border-radius:10px; padding:8px 4px; text-align:center; font-size:12px;
     border:2px solid transparent;
@@ -195,8 +198,8 @@
   }
 
   /* ---------- COMBO FLAMES (power_up.gif per correct, not thrown) ---------- */
-  #combo-flames{display:flex; gap:4px; align-items:center}
-  #combo-flames img{width:30px; height:30px; object-fit:contain; filter:grayscale(1); opacity:.35}
+  #combo-flames{display:flex; gap:2px; align-items:center}
+  #combo-flames img{width:46px; height:46px; object-fit:contain; filter:grayscale(1); opacity:.35}
   #combo-flames img.lit{filter:none; opacity:1}
   /* ---------- SKILL CAST FX ---------- */
   #beam{position:absolute; height:34px; top:45%; background:linear-gradient(90deg,#b3f0ff,#2aa9ff,#b3f0ff); border-radius:17px; box-shadow:0 0 18px #5ecbff,0 0 40px #2aa9ff; z-index:6; transform-origin:left center}
@@ -208,16 +211,25 @@
   #clone-img{position:absolute; width:110px; bottom:26px; z-index:5}
   /* ---------- SKILL ORB (magic atom: icon inside rings + electrons) ---------- */
   #skill-shop{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
-  .skill-orb{
-    position:relative; background:#1a1440; color:#fff; border-radius:16px; padding:10px 4px;
-    text-align:center; font-size:12px; border:2px solid #7b61ff; cursor:pointer;
+  .skill-orb,.food-card{
+    flex:1 1 0; min-width:96px; display:flex; align-items:center; gap:6px;
+    background:#1a1440; color:#fff; border-radius:12px; padding:6px;
+    font-size:11px; border:2px solid #7b61ff; cursor:pointer; pointer-events:auto;
   }
-  .skill-orb .atom{position:relative; width:56px; height:56px; margin:0 auto}
-  .skill-orb .atom img{width:40px; height:40px; object-fit:contain; position:absolute; left:8px; top:8px; z-index:2}
-  .skill-orb .atom .ring{position:absolute; inset:0; border:2px solid rgba(123,97,255,.9); border-radius:50%; animation:spin 3s linear infinite}
-  .skill-orb .atom .ring.r2{inset:7px; animation-duration:2s; animation-direction:reverse; border-color:rgba(0,229,255,.9)}
-  .skill-orb .atom .ring::after{content:''; position:absolute; width:8px; height:8px; border-radius:50%; background:#00e5ff; top:-5px; left:50%}
-  .skill-orb .atom .ring.r2::after{background:#ffdf5e}
+  .food-card{background:#243b2a; border-color:#38d977}
+  .skill-orb .sname,.food-card .sname{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .skill-orb .mcost,.food-card .mcost{font-size:20px; font-weight:bold; color:var(--gold); flex-shrink:0}
+  .skill-orb .atom,.food-card .atom{position:relative; width:52px; height:52px; flex-shrink:0}
+  .skill-orb .atom img,.food-card .atom img{object-fit:contain; position:absolute; z-index:2}
+  .skill-orb .atom .ficon,.food-card .atom .ficon{position:absolute; left:0; right:0; top:4px; text-align:center; z-index:2}
+  .atom .ring{position:absolute; border-radius:50%; animation:spin 3s linear infinite}
+  .atom .ring.r1{inset:0; border:2px solid rgba(123,97,255,.9)}
+  .atom .ring.r2{inset:7px; border:2px solid rgba(0,229,255,.9); animation-duration:2s; animation-direction:reverse}
+  .atom .ring.r3{inset:14px; border:2px solid rgba(255,223,94,.9); animation-duration:1.4s}
+  .atom .ring::after{content:''; position:absolute; width:8px; height:8px; border-radius:50%; top:-5px; left:50%}
+  .atom .ring.r1::after{background:#00e5ff}
+  .atom .ring.r2::after{background:#ffdf5e}
+  .atom .ring.r3::after{background:#ff6b9d}
   @keyframes spin{to{transform:rotate(360deg)}}
   .skill-orb.ready{box-shadow:0 0 12px rgba(123,97,255,.9); background:#241b5e}
   .skill-orb.locked{opacity:.55}
@@ -241,109 +253,109 @@
 
 <div id="topbar">
   <h1>⏱ Timer Battle</h1>
-  <button id="btn-bgm" onclick="toggleBgm()" title="Nhạc nền">🎵</button>
+  <button id="btn-bgm" onclick="toggleBgm()" title="Music">🎵</button>
   <div id="tabs">
-    <button id="tab-setup" class="active" onclick="showTab('setup')">Cài đặt</button>
-    <button id="tab-arena" onclick="startArena()">Chơi</button>
+    <button id="tab-setup" class="active" onclick="showTab('setup')">Settings</button>
+    <button id="tab-arena" onclick="startArena()">Play</button>
   </div>
-  <button id="btn-fullscreen" onclick="toggleFullScreen()">Phóng to ⛶</button>
+  <button id="btn-fullscreen" onclick="toggleFullScreen()">Fullscreen ⛶</button>
 </div>
 
 <!-- ============ SETUP SCREEN ============ -->
 <div id="screen-setup" class="panel">
-  <h2>Cài đặt</h2>
+  <h2>Settings</h2>
   <div class="setup-tabs">
-    <button id="spb-time" class="active" onclick="showPane('time')">⏱ Giờ</button>
+    <button id="spb-time" class="active" onclick="showPane('time')">⏱ Time</button>
     <button id="spb-boss" onclick="showPane('boss')">👹 Boss</button>
-    <button id="spb-hero" onclick="showPane('hero')">🦸 Player</button>
-    <button id="spb-skill" onclick="showPane('skill')">✨ Skill + Đồ ăn</button>
-    <button id="spb-bg" onclick="showPane('bg')">🌳 Nền+Nhạc</button>
-    <button id="spb-keys" onclick="showPane('keys')">⌨ Nút bấm</button>
+    <button id="spb-hero" onclick="showPane('hero')">🦸 Hero</button>
+    <button id="spb-skill" onclick="showPane('skill')">✨ Skills + Food</button>
+    <button id="spb-bg" onclick="showPane('bg')">🌳 BG + Music</button>
+    <button id="spb-keys" onclick="showPane('keys')">⌨ Keys</button>
   </div>
   <div class="setup-pane" id="sp-time">
-  <h2>Cài đặt thời gian</h2>
+  <h2>Time settings</h2>
   <div class="row preset" id="time-presets">
-    <button onclick="setPreset(120,this)">2 phút</button>
-    <button onclick="setPreset(180,this)">3 phút</button>
-    <button onclick="setPreset(300,this)">5 phút</button>
-    <button onclick="setPreset(600,this)">10 phút</button>
+    <button onclick="setPreset(120,this)">2 min</button>
+    <button onclick="setPreset(180,this)">3 min</button>
+    <button onclick="setPreset(300,this)">5 min</button>
+    <button onclick="setPreset(600,this)">10 min</button>
   </div>
   <div class="time-inputs" style="margin-top:10px">
-    <div><input type="number" id="input-h" min="0" value="0"><label>Giờ</label></div>
-    <div><input type="number" id="input-m" min="0" value="2"><label>Phút</label></div>
-    <div><input type="number" id="input-s" min="0" value="0"><label>Giây</label></div>
+    <div><input type="number" id="input-h" min="0" value="0"><label>Hr</label></div>
+    <div><input type="number" id="input-m" min="0" value="2"><label>Min</label></div>
+    <div><input type="number" id="input-s" min="0" value="0"><label>Sec</label></div>
   </div>
 
   </div>
   <div class="setup-pane hidden" id="sp-boss">
   <fieldset>
-    <legend>Boss (trái) — bấm tick chọn 1 hình</legend>
-    <label>Dán thêm link Boss mới: <input type="text" id="boss-url" placeholder="https://..."></label>
+    <legend>Boss (left) — tick to pick 1 image</legend>
+    <label>Paste extra Boss link: <input type="text" id="boss-url" placeholder="https://..."></label>
     <div class="gallery" id="boss-gallery"></div>
-    <div class="flip-row"><button onclick="toggleFlip('boss')">⇋ Lật ngang Boss (quay mặt qua phải)</button><span id="boss-flip-state">Đang: đã lật (nhìn qua phải)</span></div>
-    <div class="size-row">Độ to Boss: <input type="range" id="boss-size" min="50" max="300" value="130" oninput="setSize('boss')"><span id="boss-size-val">130%</span></div>
-    <label><input type="checkbox" id="boss-rmwhite" checked> Xóa nền trắng của Boss (nếu ảnh có nền trắng)</label>
+    <div class="flip-row"><button onclick="toggleFlip('boss')">⇋ Flip Boss (face right)</button><span id="boss-flip-state">State: on (faces right)</span></div>
+    <div class="size-row">Boss size: <input type="range" id="boss-size" min="50" max="300" value="130" oninput="setSize('boss')"><span id="boss-size-val">130%</span></div>
+    <label><input type="checkbox" id="boss-rmwhite" checked> Remove white Boss background (if any)</label>
   </fieldset>
 
   </div>
   <div class="setup-pane hidden" id="sp-hero">
   <fieldset>
-    <legend>Player (phải) — bấm tick chọn 1 hình</legend>
-    <label>Dán thêm link Player mới: <input type="text" id="hero-url" placeholder="https://..."></label>
+    <legend>Hero (right) — tick to pick 1 image</legend>
+    <label>Paste extra Hero link: <input type="text" id="hero-url" placeholder="https://..."></label>
     <div class="gallery" id="hero-gallery"></div>
-    <div class="flip-row"><button onclick="toggleFlip('hero')">⇋ Lật ngang Player</button><span id="hero-flip-state">Đang: chưa lật</span></div>
-    <div class="size-row">Độ to Player: <input type="range" id="hero-size" min="50" max="300" value="130" oninput="setSize('hero')"><span id="hero-size-val">130%</span></div>
+    <div class="flip-row"><button onclick="toggleFlip('hero')">⇋ Flip Hero</button><span id="hero-flip-state">State: off</span></div>
+    <div class="size-row">Hero size: <input type="range" id="hero-size" min="50" max="300" value="130" oninput="setSize('hero')"><span id="hero-size-val">130%</span></div>
   </fieldset>
   </div>
   <div class="setup-pane hidden" id="sp-skill">
   <fieldset>
-    <legend>Skill của Hero — tick chọn skill được dùng (bỏ tick = tắt)</legend>
-    <div class="row"><button class="btn-add" onclick="toggleAllSkills('hero',true)">Tick chọn tất cả</button><button class="btn-clear" onclick="toggleAllSkills('hero',false)">Bỏ chọn tất cả</button></div>
+    <legend>Hero skills — tick to enable (untick = off)</legend>
+    <div class="row"><button class="btn-add" onclick="toggleAllSkills('hero',true)">Select all</button><button class="btn-clear" onclick="toggleAllSkills('hero',false)">Clear all</button></div>
     <div id="skill-pick" style="margin-top:10px"></div>
   </fieldset>
   <fieldset>
-    <legend>Đồ ăn — quăng cho Boss, Boss biến thành ảnh đang ăn</legend>
-    <div class="row"><button class="btn-add" onclick="toggleAllSkills('food',true)">Tick chọn tất cả</button><button class="btn-clear" onclick="toggleAllSkills('food',false)">Bỏ chọn tất cả</button></div>
+    <legend>Food — throw at Boss, Boss turns into eating image</legend>
+    <div class="row"><button class="btn-add" onclick="toggleAllSkills('food',true)">Select all</button><button class="btn-clear" onclick="toggleAllSkills('food',false)">Clear all</button></div>
     <div id="food-pick" style="margin-top:10px"></div>
   </fieldset>
   <fieldset>
-    <legend>Skill riêng của Boss — ăn xong to thêm + chạy nhanh</legend>
-    <label>To thêm mỗi lần ăn (%): <input type="number" id="boss-grow-pct" value="10" min="0" max="100" style="width:70px"></label>
-    <label>Tăng tốc trong (giây): <input type="number" id="boss-grow-sec" value="5" min="1" max="30" style="width:70px"></label>
+    <legend>Boss perk — after eating grows + runs fast</legend>
+    <label>Grow per eat (%): <input type="number" id="boss-grow-pct" value="10" min="0" max="100" style="width:70px"></label>
+    <label>Speed-up (sec): <input type="number" id="boss-grow-sec" value="5" min="1" max="30" style="width:70px"></label>
   </fieldset>
   </div>
   <div class="setup-pane hidden" id="sp-bg">
 
   <fieldset>
-    <legend>Nền (mặc định rừng sáng vui mắt — đã lưu sẵn trong game)</legend>
-    <label>Dán link nền mới (tự nhớ cho lần sau): <input type="text" id="bg-url" placeholder="https://..."></label>
-    <div class="row"><button class="btn-add" onclick="saveBg()">Lưu nền này</button></div>
+    <legend>Background (default bright jungle — built in)</legend>
+    <label>Paste new background link (auto-remembers): <input type="text" id="bg-url" placeholder="https://..."></label>
+    <div class="row"><button class="btn-add" onclick="saveBg()">Save background</button></div>
   </fieldset>
 
   </div>
   <div class="setup-pane hidden" id="sp-keys">
   <fieldset>
-    <legend>Phím + chuột (cả 3 cùng chạy, chung 1 ruột đúng/sai)</legend>
-    <label>Phím ĐÚNG: <input type="text" id="key-correct" value="ArrowRight" style="width:140px"></label>
-    <label>Phím SAI: <input type="text" id="key-wrong" value="ArrowLeft" style="width:140px"></label>
-    <label><input type="checkbox" id="mouse-zone" checked> Bật click trong sân: trái = đúng, phải = sai</label>
+    <legend>Keys + mouse (all 3 work together)</legend>
+    <label>CORRECT key: <input type="text" id="key-correct" value="ArrowRight" style="width:140px"></label>
+    <label>WRONG key: <input type="text" id="key-wrong" value="ArrowLeft" style="width:140px"></label>
+    <label><input type="checkbox" id="mouse-zone" checked> Click in arena: left = correct, right = wrong</label>
   </fieldset>
 
   <fieldset>
-    <legend>Nhạc (tải từ máy lên, trình duyệt không chặn)</legend>
-    <label>Chọn nhạc có sẵn trong game:
+    <legend>Music (upload from device, no browser block)</legend>
+    <label>Built-in music:
       <select id="bgm-pick" style="padding:7px;border-radius:6px">
-        <option value="">— file tự tải dưới —</option>
-        <option value="assets/music/bgm.mp3">Nhạc 1 (assets/music/bgm.mp3)</option>
+        <option value="">— your upload below —</option>
+        <option value="assets/music/bgm.mp3">Music 1 (assets/music/bgm.mp3)</option>
       </select>
     </label>
-    <label>Hoặc tải mp3 từ máy lên: <input type="file" id="bgm-file" accept="audio/*"></label>
-    <div class="row"><button class="btn-add" onclick="toggleBgm()">Phát / Dừng nhạc nền</button></div>
-    <div style="font-size:12px;color:#555">Muốn nhạc mặc định luôn có: copy file mp3 vào thư mục <b>assets/music/</b> đặt tên <b>bgm.mp3</b> rồi đẩy lên GitHub là xong.</div>
+    <label>Or upload mp3: <input type="file" id="bgm-file" accept="audio/*"></label>
+    <div class="row"><button class="btn-add" onclick="toggleBgm()">Play / Stop music</button></div>
+    <div style="font-size:12px;color:#555">Default music: copy an mp3 into <b>assets/music/</b> named <b>bgm.mp3</b>, then push to GitHub.</div>
   </fieldset>
   </div>
   <div class="buttons row">
-    <button id="btn-start" onclick="startArena()">Bắt đầu chơi ▶</button>
+    <button id="btn-start" onclick="startArena()">Start ▶</button>
   </div>
 </div>
 
@@ -370,18 +382,17 @@
   </div>
 
   <div id="deck">
-    <div id="combo-banner" class="hidden">🎉 COMBO 5! Tặng 1 món miễn phí!</div>
+    <div id="combo-banner" class="hidden">🎉 COMBO 5! Free skill!</div>
     <div id="judge-row">
-      <button id="btn-correct" onclick="onCorrect()">✓ ĐÚNG</button>
-      <button id="btn-wrong" onclick="onWrong()">✗ SAI</button>
+      <button id="btn-correct" onclick="onCorrect()">✓ CORRECT</button>
+      <button id="btn-wrong" onclick="onWrong()">✗ WRONG</button>
     </div>
     <div id="meter-row">
-      <div>Mana: <span id="mana-dots">○○○○○</span></div>
-      <div id="combo-flames"><img data-i="0" src="assets/power_up.gif" alt="combo"><img data-i="1" src="assets/power_up.gif" alt="combo"><img data-i="2" src="assets/power_up.gif" alt="combo"><img data-i="3" src="assets/power_up.gif" alt="combo"><img data-i="4" src="assets/power_up.gif" alt="combo"></div>
+      <div id="mana-label">Mana <span id="combo-flames"><img data-i="0" src="assets/power_up.gif" alt="combo"><img data-i="1" src="assets/power_up.gif" alt="combo"><img data-i="2" src="assets/power_up.gif" alt="combo"><img data-i="3" src="assets/power_up.gif" alt="combo"><img data-i="4" src="assets/power_up.gif" alt="combo"></span></div>
       <div class="buttons">
-        <button id="btn-pause" class="hidden" onclick="pauseGame()">Dừng</button>
-        <button id="btn-resume" class="hidden" onclick="resumeGame()">Tiếp tục</button>
-        <button id="btn-reset" onclick="quitArena()">Thoát</button>
+        <button id="btn-pause" class="hidden" onclick="pauseGame()">Pause</button>
+        <button id="btn-resume" class="hidden" onclick="resumeGame()">Resume</button>
+        <button id="btn-reset" onclick="quitArena()">Exit</button>
       </div>
     </div>
     <!-- SHOP: skill orbs + food cards -->
@@ -392,7 +403,7 @@
 
 <div id="end-screen" class="hidden">
   <h1 class="pixel-text" id="end-title">Time up!</h1>
-  <div class="buttons"><button id="btn-start" onclick="returnToSetup()">Chơi lại ↻</button></div>
+  <div class="buttons"><button id="btn-start" onclick="returnToSetup()">Play again ↻</button></div>
 </div>
 
 <script>
@@ -404,10 +415,10 @@ const BOSS_CHOICES = [
   {name:'Boss 3', src:'assets/boss/boss3.gif'},
 ];
 const HERO_CHOICES = [
-  {name:'Player 1', src:'assets/hero/player1.gif'},
-  {name:'Player 2', src:'assets/hero/player2.gif'},
-  {name:'Player 3', src:'assets/hero/player3.gif'},
-  {name:'Player 4', src:'assets/hero/player4.gif'},
+  {name:'Hero 1', src:'assets/hero/player1.gif'},
+  {name:'Hero 2', src:'assets/hero/player2.gif'},
+  {name:'Hero 3', src:'assets/hero/player3.gif'},
+  {name:'Hero 4', src:'assets/hero/player4.gif'},
 ];
 let selBoss = BOSS_CHOICES[0].src, selHero = HERO_CHOICES[0].src;
 let flipBoss = true, flipHero = false;
@@ -459,11 +470,11 @@ function showPane(name){
 // ONE array drives the 6 food dishes. To add dish 7, copy one object. No logic change.
 const FOOD_ITEMS = [
   {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, enabled:true},
-  {id:'icecream',name:'Kem',   icon:'🍦', price:5, eatSeconds:4, enabled:true},
-  {id:'mushroom',name:'Nấm',   icon:'🍄', price:5, eatSeconds:5, enabled:true},
-  {id:'chili',   name:'Ớt',    icon:'🌶️', price:5, eatSeconds:4, enabled:true},
-  {id:'noodles', name:'Mì',    icon:'🍜', price:5, eatSeconds:5, enabled:true},
-  {id:'teacher', name:'Cô giáo',icon:'👩‍🏫', price:5, eatSeconds:5, enabled:true},
+  {id:'icecream',name:'Ice Cream', icon:'🍦', price:5, eatSeconds:4, enabled:true},
+  {id:'mushroom',name:'Mushroom',icon:'🍄', price:5, eatSeconds:5, enabled:true},
+  {id:'chili',   name:'Chili',   icon:'🌶️', price:5, eatSeconds:4, enabled:true},
+  {id:'noodles', name:'Noodles', icon:'🍜', price:5, eatSeconds:5, enabled:true},
+  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, enabled:true},
 ];
 // ONE object drives settings. New field = add one key.
 const SETTINGS = {timerSeconds:120, keyCorrect:'ArrowRight', keyWrong:'ArrowLeft', mouseZone:true};
@@ -509,7 +520,7 @@ function setPreset(sec, btn){
 function startArena(){
   const h=parseInt($('input-h').value)||0, m=parseInt($('input-m').value)||0, s=parseInt($('input-s').value)||0;
   totalTimeMs=(h*3600+m*60+s)*1000;
-  if(totalTimeMs<=0){ alert('Vui lòng nhập thời gian lớn hơn 0!'); return; }
+  if(totalTimeMs<=0){ alert('Please enter a time greater than 0!'); return; }
   SETTINGS.keyCorrect=$('key-correct').value||'ArrowRight';
   SETTINGS.keyWrong=$('key-wrong').value||'ArrowLeft';
   SETTINGS.mouseZone=$('mouse-zone').checked;
@@ -587,7 +598,7 @@ function updateGraphics(){
   // Status countdown ring text
   const now=performance.now();
   if(now<bossFrozenUntil) $('status-time').textContent=Math.ceil((bossFrozenUntil-now)/1000)+'s';
-  else if(now<bossSlowUntil) $('status-time').textContent='chậm '+Math.ceil((bossSlowUntil-now)/1000)+'s';
+  else if(now<bossSlowUntil) $('status-time').textContent='slow '+Math.ceil((bossSlowUntil-now)/1000)+'s';
 }
 function pauseGame(){
   isRunning=false; cancelAnimationFrame(animationFrameId);
@@ -618,7 +629,7 @@ function onCorrect(){
     combo=0; // free hero skill cast, does not cost mana
     updateMeters();
     const banner=$('combo-banner');
-    banner.textContent='🎉 COMBO 5! Hero tung skill!';
+    banner.textContent='🎉 COMBO 5! Hero casts a skill!';
     banner.classList.remove('hidden');
     setTimeout(()=>banner.classList.add('hidden'),2500);
     castRandomSkill();
@@ -629,7 +640,6 @@ function onWrong(){
   combo=0; updateMeters(); renderShop();
 }
 function updateMeters(){
-  $('mana-dots').textContent='●'.repeat(Math.min(5,mana))+'○'.repeat(5-Math.min(5,mana));
   document.querySelectorAll('#combo-flames img').forEach((im,i)=>im.classList.toggle('lit', i<combo));
 }
 // Keyboard + mouse-zone inputs (same core as buttons).
@@ -647,8 +657,10 @@ $('arena').addEventListener('contextmenu', e=>{ if(SETTINGS.mouseZone) e.prevent
 /* ================= SHOP + FOOD EFFECTS (framework) ================= */
 function skillIconHtml(f, size){
   size = size||26;
-  if(f.icon.indexOf('assets/')===0) return '<div class="atom"><img src="'+f.icon+'" style="width:'+size+'px;height:'+size+'px" alt="'+f.name+'"><span class="ring"></span><span class="ring r2"></span></div>';
-  return '<div class="atom" style="font-size:'+size+'px;line-height:56px">'+f.icon+'</div>';
+  const inner = (f.icon.indexOf('assets/')===0)
+    ? '<img src="'+f.icon+'" style="width:'+size+'px;height:'+size+'px;left:'+Math.round((52-size)/2)+'px;top:'+Math.round((52-size)/2)+'px" alt="'+f.name+'">'
+    : '<div class="ficon" style="font-size:'+size+'px;line-height:44px">'+f.icon+'</div>';
+  return '<div class="atom">'+inner+'<span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span></div>';
 }
 function renderShop(){
   const shop=$('shop'); if(!shop) return; shop.innerHTML='';
@@ -657,24 +669,26 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='skill-orb '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,40)+'<div>'+f.name+'</div><div class="price">5 ●</div>';
-    d.title='Skill: '+f.name;
-    d.onclick=()=>castSkill(f.id,false);
+    d.innerHTML=skillIconHtml(f,30)+'<div class="sname">'+f.name+'</div><div class="mcost">'+f.price+'</div>';
+    d.title=f.name+' ('+f.price+' mana)';
+    d.style.pointerEvents='auto'; d.style.cursor='pointer';
+    d.onclick=(function(id){ return function(){ castSkill(id,false); }; })(f.id);
     shop.appendChild(d);
   }
-  shop.style.display='grid'; shop.style.gridTemplateColumns='repeat(4,1fr)'; shop.style.gap='10px';
+  shop.style.display='flex';
   const fs=$('food-shop'); if(!fs) return; fs.innerHTML='';
   for(const f of FOOD_ITEMS){
     if(f.enabled===false) continue;
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='food-card '+(ready?'ready':'locked');
-    d.innerHTML='<div style="font-size:26px">'+f.icon+'</div><div>'+f.name+'</div><div class="price">5 ●</div>';
-    d.title=f.name+' — Boss ngồi ăn '+f.eatSeconds+'s';
-    d.onclick=()=>buyFood(f.id);
+    d.innerHTML=skillIconHtml(f,30)+'<div class="sname">'+f.name+'</div><div class="mcost">'+f.price+'</div>';
+    d.title=f.name+' ('+f.price+' mana) — Boss sits and eats '+f.eatSeconds+'s';
+    d.style.pointerEvents='auto'; d.style.cursor='pointer';
+    d.onclick=(function(id){ return function(){ buyFood(id); }; })(f.id);
     fs.appendChild(d);
   }
-  fs.style.display='grid'; fs.style.gridTemplateColumns='repeat(6,1fr)'; fs.style.gap='8px'; fs.style.marginTop='8px';
+  fs.style.display='flex';
 }
 function renderSkillPick(){
   const box=$('skill-pick'); if(box){
@@ -683,7 +697,7 @@ function renderSkillPick(){
     for(const f of HERO_SKILLS){
       const d=document.createElement('div');
       d.className='skill-orb '+((f.enabled!==false)?'ready':'off');
-      d.innerHTML=skillIconHtml(f,40)+'<div>'+f.name+'</div><label style="font-size:12px"><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> dùng</label>';
+      d.innerHTML=skillIconHtml(f,40)+'<div>'+f.name+'</div><label style="font-size:12px"><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> use</label>';
       d.querySelector('input').onchange=(e)=>{ f.enabled=e.target.checked; d.classList.toggle('off',!f.enabled); d.classList.toggle('ready',f.enabled); renderShop(); };
       d.onclick=(e)=>{ if(e.target.tagName!=='INPUT'){ f.enabled=!(f.enabled!==false); renderSkillPick(); renderShop(); } };
       box.appendChild(d);
@@ -691,11 +705,11 @@ function renderSkillPick(){
   }
   const fb=$('food-pick'); if(fb){
     fb.innerHTML='';
-    fb.style.display='grid'; fb.style.gridTemplateColumns='repeat(6,1fr)'; fb.style.gap='8px';
+    fb.style.display='flex'; fb.style.gap='6px'; fb.style.flexWrap='wrap';
     for(const f of FOOD_ITEMS){
       const d=document.createElement('div');
       d.className='food-card '+((f.enabled!==false)?'ready':'locked');
-      d.innerHTML='<div style="font-size:26px">'+f.icon+'</div><div>'+f.name+'</div><label style="font-size:12px"><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> dùng</label>';
+      d.innerHTML=skillIconHtml(f,30)+'<div class="sname">'+f.name+'</div><label style="font-size:12px"><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> use</label>';
       d.querySelector('input').onchange=(e)=>{ f.enabled=e.target.checked; renderShop(); };
       d.onclick=(e)=>{ if(e.target.tagName!=='INPUT'){ f.enabled=!(f.enabled!==false); renderSkillPick(); renderShop(); } };
       fb.appendChild(d);
@@ -716,9 +730,9 @@ function castGeom(){
 }
 function castSkill(id, free){
   const f=HERO_SKILLS.find(x=>x.id===id); if(!f) return;
-  if(f.enabled===false){ alert('Skill này đang tắt tick!'); return; }
+  if(f.enabled===false){ alert('This skill is unticked (off)!'); return; }
   if(!free){
-    if(mana<f.price){ alert('Chưa đủ 5 điểm xanh!'); return; }
+    if(mana<f.price){ alert('Need 5 mana!'); return; }
     mana-=f.price;
   }
   updateMeters(); renderShop();
@@ -777,7 +791,7 @@ function castIce(f){
     proj.classList.add('hidden'); proj.style.transition='';
     const bossBox=$('boss');
     bossBox.classList.add('tint-blue');
-    $('status-badge').innerHTML='❄️ Đóng băng<small id="status-time"></small>';
+    $('status-badge').innerHTML='❄️ Frozen<small id="status-time"></small>';
     $('status-badge').classList.remove('hidden');
     bossFrozenUntil=performance.now()+(f.freezeSec||4)*1000;
     setTimeout(()=>{ bossBox.classList.remove('tint-blue'); $('status-badge').classList.add('hidden'); }, (f.freezeSec||4)*1000);
@@ -790,7 +804,7 @@ function castThunder(f){
   requestAnimationFrame(()=>{ fl.style.transition='opacity .5s'; fl.style.opacity='0'; });
   const bossBox=$('boss');
   bossBox.classList.remove('shake'); void bossBox.offsetWidth; bossBox.classList.add('shake');
-  $('status-badge').innerHTML='⚡ Sét đánh<small id="status-time"></small>';
+  $('status-badge').innerHTML='⚡ Thunder<small id="status-time"></small>';
   $('status-badge').classList.remove('hidden');
   bossFrozenUntil=performance.now()+(f.stunSec||3)*1000;
   setTimeout(()=>{ $('status-badge').classList.add('hidden'); }, (f.stunSec||3)*1000);
@@ -800,7 +814,7 @@ function castClone(f){
   const bossBox=$('boss'), cl=$('clone-img');
   cl.style.left=(bossBox.offsetLeft-120)+'px';
   cl.classList.remove('hidden');
-  $('status-badge').innerHTML='👿 Phân thân<small id="status-time"></small>';
+  $('status-badge').innerHTML='👿 Clone<small id="status-time"></small>';
   $('status-badge').classList.remove('hidden');
   bossSlowUntil=performance.now()+4000;
   setTimeout(()=>{ cl.classList.add('hidden'); $('status-badge').classList.add('hidden'); }, 4000);
@@ -810,7 +824,7 @@ function castDash(f){
   const bossBox=$('boss');
   bossBox.classList.remove('shake'); void bossBox.offsetWidth; bossBox.classList.add('shake');
   bossProgress=Math.max(0,bossProgress-8);
-  $('status-badge').innerHTML='🚀 Húc văng<small id="status-time"></small>';
+  $('status-badge').innerHTML='🚀 Dash hit<small id="status-time"></small>';
   $('status-badge').classList.remove('hidden');
   updateGraphics();
   setTimeout(()=>{ $('status-badge').classList.add('hidden'); }, 2500);
@@ -824,14 +838,14 @@ function bossGrow(){
   applySizes();
   const bossBox=$('boss'), badge=$('status-badge');
   bossBox.classList.add('boss-grow');
-  badge.innerHTML='👹 +'+pct+'% nhanh '+sec+'s<small id="status-time"></small>';
+  badge.innerHTML='👹 +'+pct+'% fast '+sec+'s<small id="status-time"></small>';
   badge.classList.remove('hidden');
   setTimeout(()=>{ bossBox.classList.remove('boss-grow'); }, sec*1000);
 }
 function applyFood(id){
   const f=FOOD_ITEMS.find(x=>x.id===id); if(!f) return;
-  if(f.enabled===false){ alert('Món này đang tắt tick!'); return; }
-  if(mana<f.price){ alert('Chưa đủ 5 điểm xanh!'); return; }
+  if(f.enabled===false){ alert('This dish is unticked (off)!'); return; }
+  if(mana<f.price){ alert('Need 5 mana!'); return; }
   mana-=f.price;
   updateMeters(); renderShop();
   throwFood(f);
@@ -864,9 +878,9 @@ function throwFood(f){
 /* ================= MUSIC (repo mp3 remembered, upload also works) ================= */
 function saveBg(){
   const v=$('bg-url').value.trim();
-  if(!v){ alert('Chưa dán link!'); return; }
+  if(!v){ alert('No link pasted!'); return; }
   localStorage.setItem('timer_bg', v);
-  alert('Lưu nền xong! Lần sau mở lên tự dùng nền này.');
+  alert('Background saved! It auto-loads next time.');
 }
 (function initBg(){
   const r=localStorage.getItem('timer_bg');
@@ -894,18 +908,18 @@ $('bgm-file').addEventListener('change', e=>{
   if(s && $('bgm-pick')) $('bgm-pick').value=s;
 })();
 function toggleBgm(){
-  if(!AUDIO.bgm.src){ alert('Chưa chọn file nhạc!'); return; }
+  if(!AUDIO.bgm.src){ alert('No music file selected!'); return; }
   if(AUDIO.bgmOn){ AUDIO.bgm.pause(); AUDIO.bgmOn=false; }
-  else { AUDIO.bgm.play().catch(()=>alert('Trình duyệt chặn tự phát — bấm lại lần nữa nhé!')); AUDIO.bgmOn=true; }
+  else { AUDIO.bgm.play().catch(()=>alert('Browser blocked autoplay — press again!')); AUDIO.bgmOn=true; }
 }
 
 /* ================= FULLSCREEN ================= */
 function toggleFullScreen(){
-  if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(err=>alert('Không thể bật toàn màn hình: '+err.message));
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(err=>alert('Cannot fullscreen: '+err.message));
   else document.exitFullscreen();
 }
 document.addEventListener('fullscreenchange', ()=>{
-  $('btn-fullscreen').innerText=document.fullscreenElement?'Thu nhỏ ✖️':'Phóng to ⛶';
+  $('btn-fullscreen').innerText=document.fullscreenElement?'Exit fullscreen ✖️':'Fullscreen ⛶';
 });
 
 // First paint
@@ -930,13 +944,13 @@ function renderGallery(){
 }
 function addPastedLinks(){
   const b=$('boss-url').value.trim();
-  if(b && !BOSS_CHOICES.some(c=>c.src===b)) BOSS_CHOICES.push({name:'Link mới', src:b});
+  if(b && !BOSS_CHOICES.some(c=>c.src===b)) BOSS_CHOICES.push({name:'New link', src:b});
   const h=$('hero-url').value.trim();
-  if(h && !HERO_CHOICES.some(c=>c.src===h)) HERO_CHOICES.push({name:'Link mới', src:h});
+  if(h && !HERO_CHOICES.some(c=>c.src===h)) HERO_CHOICES.push({name:'New link', src:h});
 }
 function toggleFlip(who){
-  if(who==='boss'){ flipBoss=!flipBoss; $('boss-flip-state').textContent='Đang: '+(flipBoss?'đã lật (nhìn qua phải)':'chưa lật (nhìn qua trái)'); $('boss').classList.toggle('mirrored', flipBoss); }
-  else { flipHero=!flipHero; $('hero-flip-state').textContent='Đang: '+(flipHero?'đã lật':'chưa lật'); $('hero').classList.toggle('mirrored', flipHero); }
+  if(who==='boss'){ flipBoss=!flipBoss; $('boss-flip-state').textContent='State: '+(flipBoss?'on (faces right)':'off (faces left)'); $('boss').classList.toggle('mirrored', flipBoss); }
+  else { flipHero=!flipHero; $('hero-flip-state').textContent='State: '+(flipHero?'on':'off'); $('hero').classList.toggle('mirrored', flipHero); }
 }
 const COMBO_FLAMES = ['assets/power_up.gif','assets/power_up.gif','assets/power_up.gif','assets/power_up.gif','assets/power_up.gif'];
 // Combo-5 is handled by castRandomSkill() (free hero skill). No burger throw.
