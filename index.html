@@ -17,17 +17,18 @@
   body{
     font-family:'Segoe UI',Tahoma,Verdana,sans-serif;
     background:var(--bg); color:#fff;
-    margin:0; padding:12px 24px; min-height:100vh;
-    display:flex; flex-direction:column; align-items:center; gap:12px;
-    overflow-x:hidden;
+    margin:0; padding:8px 24px; height:100vh;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    overflow:hidden;
   }
   .hidden{display:none !important}
   button{cursor:pointer; font-weight:bold; border:none; border-radius:10px}
 
   /* ---------- TOP BAR ---------- */
-  #topbar{width:100%; max-width:1280px; display:flex; align-items:center; gap:10px}
+  #topbar{width:100%; max-width:1280px; display:flex; align-items:center; gap:10px; flex-shrink:0}
   #topbar h1{font-size:18px; margin:0; flex:1}
   #btn-fullscreen{background:#2c3e50; color:#fff; padding:8px 12px; font-size:13px}
+  #btn-bgm{background:#8e44ad; color:#fff; padding:8px 12px; font-size:16px}
 
   /* ---------- TABS ---------- */
   #tabs{display:flex; gap:8px}
@@ -77,7 +78,7 @@
   /* Mirror flip (face right), bg-blend, projectile, setup sub-tabs */
   .fighter.mirrored{transform:scaleX(-1)}
   .fighter.rmwhite img{mix-blend-mode:multiply}
-  #projectile{position:absolute; bottom:100px; font-size:46px; z-index:20; transition:left .7s linear; pointer-events:none}
+  #projectile{position:absolute; bottom:170px; font-size:56px; z-index:20; transition:left .7s linear; pointer-events:none}
   .setup-tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px}
   .setup-tabs button{background:#ecf0f1; color:#222; padding:8px 12px; font-size:13px}
   .setup-tabs button.active{background:#3498db; color:#fff}
@@ -85,19 +86,26 @@
   .bossbar-wrap{width:100%; min-width:0}
   .bossbar-wrap .face{flex-shrink:0}
   .progress-container{min-width:0; overflow:hidden}
-  /* Wide screen (14 inch): wider arena + 2-column control deck */
+  /* Wide screen (14 inch): 2-column control deck, compact so all fits */
   @media(min-width:1000px){
-    #arena{aspect-ratio:21/8}
-    #deck{display:grid; grid-template-columns:1fr 1.2fr; gap:12px}
+    #deck{display:grid; grid-template-columns:1fr 1.2fr; gap:8px; padding:8px}
     #judge-row{grid-column:1/-1}
     #combo-banner{grid-column:1/-1}
   }
+  /* Control deck compact: everything visible on 14 inch */
+  #judge-row{display:flex; gap:10px}
+  #btn-correct{flex:1; background:var(--accent); color:#fff; font-size:20px; padding:10px}
+  #btn-wrong{flex:1; background:var(--danger); color:#fff; font-size:20px; padding:10px}
+  #deck{padding:8px; gap:8px}
+  #meter-row{font-size:14px}
+  #mana-dots{font-size:20px}
+  #bgm-btn{background:#8e44ad; color:#fff; padding:8px 12px; font-size:16px}
 
   /* ---------- ARENA SCREEN ---------- */
-  #screen-arena{width:100%; max-width:1280px; display:flex; flex-direction:column; gap:10px}
+  #screen-arena{width:100%; max-width:1280px; height:calc(100vh - 70px); display:flex; flex-direction:column; gap:6px}
   #clock-display{
-    font-size:44px; font-weight:bold; font-family:monospace; text-align:center;
-    background:#fff; color:#222; border-radius:14px; padding:4px 24px; align-self:center;
+    font-size:34px; font-weight:bold; font-family:monospace; text-align:center;
+    background:#fff; color:#222; border-radius:12px; padding:2px 20px; align-self:center;
   }
   #clock-display.warn{color:#b77900}
   #clock-display.danger{color:var(--danger); animation:pulse 1s infinite}
@@ -126,22 +134,22 @@
   }
   @keyframes shine{from{background-position:200% 0} to{background-position:-100% 0}}
 
-  /* Arena: jungle default background */
+  /* Arena: default bg = repo jungle (pinned link). Custom link saved to memory. */
   #arena{
-    position:relative; width:100%; aspect-ratio:16/8; border-radius:14px; overflow:hidden;
+    position:relative; width:100%; flex:1; min-height:280px; border-radius:14px; overflow:hidden;
     background:linear-gradient(#1d3a24,#0e1f13);
     border:3px solid #2c3e50;
   }
-  #arena .bg-layer{position:absolute; inset:0; background-size:cover; background-position:center}
+  #arena .bg-layer{position:absolute; inset:0; background-image:url("assets/bg/jungle.jpg"); background-size:cover; background-position:center}
   #arena .ground{position:absolute; left:0; right:0; bottom:0; height:26px; background:rgba(0,0,0,.45)}
-  .fighter{position:absolute; bottom:26px; width:110px; text-align:center; transition:left .2s linear}
-  .fighter img{width:110px; height:110px; object-fit:contain; filter:drop-shadow(0 4px 6px rgba(0,0,0,.5)); animation:bounce 1.2s ease-in-out infinite}
-  @keyframes bounce{50%{transform:translateY(-8px)}}
+  .fighter{position:absolute; bottom:26px; width:200px; text-align:center; transition:left .2s linear}
+  .fighter img{width:200px; height:200px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); animation:bounce 1.2s ease-in-out infinite}
+  @keyframes bounce{50%{transform:translateY(-10px)}}
   #boss{left:2%}
   #hero{right:2%}
   /* Status badge above boss */
   #status-badge{
-    position:absolute; bottom:150px; left:2%; min-width:110px; text-align:center;
+    position:absolute; bottom:250px; left:2%; min-width:110px; text-align:center;
     font-size:26px; background:rgba(0,0,0,.55); border-radius:12px; padding:2px 10px;
   }
   #status-badge small{font-size:12px; color:#ffd43b; display:block}
@@ -151,7 +159,7 @@
   .tint-fire img{filter:drop-shadow(0 0 14px #ff922b) sepia(.6) saturate(2) hue-rotate(-30deg) !important}
   /* Floating love text (teacher dish) */
   #love-text{
-    position:absolute; bottom:170px; font-family:'Press Start 2P',monospace;
+    position:absolute; bottom:270px; font-family:'Press Start 2P',monospace;
     color:#ff97d0; text-shadow:2px 2px 0 #000; white-space:nowrap;
     transform-origin:bottom left;
   }
@@ -206,6 +214,7 @@
 
 <div id="topbar">
   <h1>⏱ Timer Battle</h1>
+  <button id="btn-bgm" onclick="toggleBgm()" title="Nhạc nền">🎵</button>
   <div id="tabs">
     <button id="tab-setup" class="active" onclick="showTab('setup')">Cài đặt</button>
     <button id="tab-arena" onclick="startArena()">Chơi</button>
@@ -267,8 +276,9 @@
   <div class="setup-pane hidden" id="sp-bg">
 
   <fieldset>
-    <legend>Nền (mặc định rừng sáng vui mắt)</legend>
-    <label>Dán link nền (trống = dùng rừng sáng có sẵn): <input type="text" id="bg-url" placeholder="https://..."></label>
+    <legend>Nền (mặc định rừng sáng vui mắt — đã lưu sẵn trong game)</legend>
+    <label>Dán link nền mới (tự nhớ cho lần sau): <input type="text" id="bg-url" placeholder="https://..."></label>
+    <div class="row"><button class="btn-add" onclick="saveBg()">Lưu nền này</button></div>
   </fieldset>
 
   </div>
@@ -302,8 +312,15 @@
 
   <fieldset>
     <legend>Nhạc (tải từ máy lên, trình duyệt không chặn)</legend>
-    <label>Nhạc nền (mp3): <input type="file" id="bgm-file" accept="audio/*"></label>
+    <label>Chọn nhạc có sẵn trong game:
+      <select id="bgm-pick" style="padding:7px;border-radius:6px">
+        <option value="">— file tự tải dưới —</option>
+        <option value="assets/music/bgm.mp3">Nhạc 1 (assets/music/bgm.mp3)</option>
+      </select>
+    </label>
+    <label>Hoặc tải mp3 từ máy lên: <input type="file" id="bgm-file" accept="audio/*"></label>
     <div class="row"><button class="btn-add" onclick="toggleBgm()">Phát / Dừng nhạc nền</button></div>
+    <div style="font-size:12px;color:#555">Muốn nhạc mặc định luôn có: copy file mp3 vào thư mục <b>assets/music/</b> đặt tên <b>bgm.mp3</b> rồi đẩy lên GitHub là xong.</div>
   </fieldset>
   </div>
   <div class="buttons row">
@@ -462,15 +479,21 @@ function startArena(){
   // Appearance: tick-chosen gallery (repo files, no Pinterest block) + optional pasted link.
   addPastedLinks();
   const b=$('boss-url').value.trim()||selBoss, hh=$('hero-url').value.trim()||selHero;
-  const bg=$('bg-url').value.trim();
   const bossSrc=b||'assets/boss/boss1.gif', heroSrc=hh||'assets/hero/player1.gif';
+  // Background: pasted link wins, else remembered link, else repo jungle default.
+  const bgRemembered=localStorage.getItem('timer_bg')||'';
+  const bgPast=$('bg-url').value.trim();
+  if(bgPast) localStorage.setItem('timer_bg', bgPast);
+  const bg=bgPast||bgRemembered;
+  $('bg-layer').style.backgroundImage=bg?`url("${bg}")`:'url("assets/bg/jungle.jpg")';
+  // Music: remembered choice (repo mp3 or uploaded). No re-pick needed each time.
+  applyBgmChoice();
   rmWhiteBoss=$('boss-rmwhite')?$('boss-rmwhite').checked:true;
   $('boss-img').src=bossSrc; $('hero-img').src=heroSrc;
   $('boss').classList.toggle('mirrored', flipBoss);
   $('boss').classList.toggle('rmwhite', rmWhiteBoss);
   $('hero').classList.toggle('mirrored', flipHero);
   $('boss-face').src=bossSrc; $('hero-face').src=heroSrc;
-  $('bg-layer').style.backgroundImage=bg?`url("${bg}")`:'url("assets/bg/jungle.jpg")';
   // Reset state
   remainingTimeMs=totalTimeMs; bossProgress=0; mana=0; combo=0;
   bossFrozenUntil=0; bossSlowUntil=0;
@@ -636,11 +659,38 @@ function applyFood(id, free){
   }, f.eatSeconds*1000);
 }
 
-/* ================= MUSIC (local files only) ================= */
+/* ================= MUSIC (repo mp3 remembered, upload also works) ================= */
+function saveBg(){
+  const v=$('bg-url').value.trim();
+  if(!v){ alert('Chưa dán link!'); return; }
+  localStorage.setItem('timer_bg', v);
+  alert('Lưu nền xong! Lần sau mở lên tự dùng nền này.');
+}
+(function initBg(){
+  const r=localStorage.getItem('timer_bg');
+  if(r && $('bg-url')) $('bg-url').value=r;
+})();
+function applyBgmChoice(){
+  const pick=$('bgm-pick')?$('bgm-pick').value:'';
+  const saved=localStorage.getItem('timer_bgm');
+  const src=pick||saved;
+  if(src){ AUDIO.bgm.src=src; AUDIO.bgm.loop=true; }
+  if(pick) localStorage.setItem('timer_bgm', pick);
+}
 $('bgm-file').addEventListener('change', e=>{
   const f=e.target.files[0]; if(!f) return;
   AUDIO.bgm.src=URL.createObjectURL(f); AUDIO.bgm.loop=true;
+  if($('bgm-pick')) $('bgm-pick').value='';
+  localStorage.removeItem('timer_bgm');
 });
+(function initBgm(){
+  // Auto-try repo default: assets/music/bgm.mp3 (works after you copy the file in).
+  fetch('assets/music/bgm.mp3',{method:'HEAD'}).then(r=>{
+    if(r.ok && $('bgm-pick')){ $('bgm-pick').value='assets/music/bgm.mp3'; }
+  }).catch(()=>{});
+  const s=localStorage.getItem('timer_bgm');
+  if(s && $('bgm-pick')) $('bgm-pick').value=s;
+})();
 function toggleBgm(){
   if(!AUDIO.bgm.src){ alert('Chưa chọn file nhạc!'); return; }
   if(AUDIO.bgmOn){ AUDIO.bgm.pause(); AUDIO.bgmOn=false; }
