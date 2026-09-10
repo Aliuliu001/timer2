@@ -60,6 +60,19 @@
   fieldset label{font-size:13px; display:block; margin:6px 0}
   fieldset input[type=text]{width:100%; padding:7px; border:1px solid #ccc; border-radius:6px}
   .thumb{width:60px; height:60px; object-fit:contain; background:#eef1f4; border-radius:8px; vertical-align:middle}
+  /* Gallery pick: tick to choose, flip button */
+  .gallery{display:flex; gap:8px; flex-wrap:wrap; margin:6px 0}
+  .gallery .pick{position:relative; border:3px solid transparent; border-radius:10px; background:#eef1f4; padding:4px}
+  .gallery .pick img{width:72px; height:72px; object-fit:contain; border-radius:6px; display:block}
+  .gallery .pick.sel{border-color:var(--accent); box-shadow:0 0 8px rgba(76,175,80,.7)}
+  .gallery .pick .tick{
+    position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%;
+    background:var(--accent); color:#fff; font-size:14px; display:none;
+    align-items:center; justify-content:center; line-height:24px; text-align:center;
+  }
+  .gallery .pick.sel .tick{display:block}
+  .flip-row{display:flex; gap:8px; align-items:center; font-size:13px; margin:4px 0}
+  .flip-row button{background:#3498db; color:#fff; padding:6px 12px; font-size:13px}
 
   /* ---------- ARENA SCREEN ---------- */
   #screen-arena{width:100%; max-width:900px; display:flex; flex-direction:column; gap:10px}
@@ -197,10 +210,22 @@
   </div>
 
   <fieldset>
-    <legend>Nhân vật + nền (Boss trái → Hero phải)</legend>
-    <label>Boss: dán link ảnh/gif <input type="text" id="boss-url" placeholder="https://..."></label>
-    <label>Hero: dán link ảnh/gif <input type="text" id="hero-url" placeholder="https://..."></label>
-    <label>Nền: dán link (trống = rừng rậm mặc định) <input type="text" id="bg-url" placeholder="https://..."></label>
+    <legend>Boss (trái) — bấm tick chọn 1 hình</legend>
+    <label>Dán thêm link Boss mới: <input type="text" id="boss-url" placeholder="https://..."></label>
+    <div class="gallery" id="boss-gallery"></div>
+    <div class="flip-row"><button onclick="toggleFlip('boss')">⇋ Lật ngang Boss</button><span id="boss-flip-state">Đang: không lật</span></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Player (phải) — bấm tick chọn 1 hình</legend>
+    <label>Dán thêm link Player mới: <input type="text" id="hero-url" placeholder="https://..."></label>
+    <div class="gallery" id="hero-gallery"></div>
+    <div class="flip-row"><button onclick="toggleFlip('hero')">⇋ Lật ngang Player</button><span id="hero-flip-state">Đang: không lật</span></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Nền (mặc định rừng sáng vui mắt)</legend>
+    <label>Dán link nền (trống = dùng rừng sáng có sẵn): <input type="text" id="bg-url" placeholder="https://..."></label>
   </fieldset>
 
   <fieldset>
@@ -285,6 +310,20 @@
 
 <script>
 /* ================= FRAMEWORK DATA (simple English) ================= */
+// Galleries live in the repo (no Pinterest block). Paste-link box adds one more.
+const BOSS_CHOICES = [
+  {name:'Boss 1', src:'assets/boss/boss1.gif'},
+  {name:'Boss 2', src:'assets/boss/boss2.gif'},
+  {name:'Boss 3', src:'assets/boss/boss3.gif'},
+];
+const HERO_CHOICES = [
+  {name:'Player 1', src:'assets/hero/player1.gif'},
+  {name:'Player 2', src:'assets/hero/player2.gif'},
+  {name:'Player 3', src:'assets/hero/player3.gif'},
+  {name:'Player 4', src:'assets/hero/player4.gif'},
+];
+let selBoss = BOSS_CHOICES[0].src, selHero = HERO_CHOICES[0].src;
+let flipBoss = false, flipHero = false;
 // ONE array drives all food items. To add item 7, copy one object. No logic change.
 const FOOD_ITEMS = [
   {id:'pizza',   name:'Pizza',     icon:'🍕', price:5, eatSeconds:6, effect:'none',   eatingImage:'', afterImage:''},
@@ -360,11 +399,16 @@ function startArena(){
   SETTINGS.keyCorrect=$('key-correct').value||'ArrowRight';
   SETTINGS.keyWrong=$('key-wrong').value||'ArrowLeft';
   SETTINGS.mouseZone=$('mouse-zone').checked;
-  // Appearance: URL or jungle default
-  const b=$('boss-url').value.trim(), hh=$('hero-url').value.trim(), bg=$('bg-url').value.trim();
-  $('boss-img').src=b||defaultBoss(); $('hero-img').src=hh||defaultHero();
-  $('boss-face').src=b||defaultBoss(); $('hero-face').src=hh||defaultHero();
-  $('bg-layer').style.backgroundImage=bg?`url("${bg}")`:'none';
+  // Appearance: tick-chosen gallery (repo files, no Pinterest block) + optional pasted link.
+  addPastedLinks();
+  const b=$('boss-url').value.trim()||selBoss, hh=$('hero-url').value.trim()||selHero;
+  const bg=$('bg-url').value.trim();
+  const bossSrc=b||'assets/boss/boss1.gif', heroSrc=hh||'assets/hero/player1.gif';
+  $('boss-img').src=bossSrc; $('hero-img').src=heroSrc;
+  $('boss-img').style.transform=flipBoss?'scaleX(-1)':'none';
+  $('hero-img').style.transform=flipHero?'scaleX(-1)':'none';
+  $('boss-face').src=bossSrc; $('hero-face').src=heroSrc;
+  $('bg-layer').style.backgroundImage=bg?`url("${bg}")`:'url("assets/bg/jungle.jpg")';
   // Reset state
   remainingTimeMs=totalTimeMs; bossProgress=0; mana=0; combo=0;
   bossFrozenUntil=0; bossSlowUntil=0;
@@ -523,7 +567,8 @@ function applyFood(id, free){
       setTimeout(()=>love.classList.add('hidden'),6000);
     }
     setTimeout(()=>{
-      bossImg.src=$('boss-url').value.trim()||defaultBoss();
+      const bUrl=$('boss-url').value.trim()||selBoss||'assets/boss/boss1.gif';
+      bossImg.src=bUrl;
       bossBox.classList.remove('tint-green','tint-blue','tint-fire');
       badge.classList.add('hidden');
     }, f.effect==='poison'||f.effect==='fire' ? 5000 : 1500);
@@ -551,7 +596,35 @@ document.addEventListener('fullscreenchange', ()=>{
 });
 
 // First paint
-renderShop(); updateSlideView();
+function renderGallery(){
+  const bg=$('boss-gallery'); bg.innerHTML='';
+  BOSS_CHOICES.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.className='pick'+(selBoss===c.src?' sel':'');
+    d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>';
+    d.onclick=()=>{ selBoss=c.src; $('boss-url').value=''; renderGallery(); };
+    bg.appendChild(d);
+  });
+  const hg=$('hero-gallery'); hg.innerHTML='';
+  HERO_CHOICES.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.className='pick'+(selHero===c.src?' sel':'');
+    d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>';
+    d.onclick=()=>{ selHero=c.src; $('hero-url').value=''; renderGallery(); };
+    hg.appendChild(d);
+  });
+}
+function addPastedLinks(){
+  const b=$('boss-url').value.trim();
+  if(b && !BOSS_CHOICES.some(c=>c.src===b)) BOSS_CHOICES.push({name:'Link mới', src:b});
+  const h=$('hero-url').value.trim();
+  if(h && !HERO_CHOICES.some(c=>c.src===h)) HERO_CHOICES.push({name:'Link mới', src:h});
+}
+function toggleFlip(who){
+  if(who==='boss'){ flipBoss=!flipBoss; $('boss-flip-state').textContent='Đang: '+(flipBoss?'đã lật':'không lật'); }
+  else { flipHero=!flipHero; $('hero-flip-state').textContent='Đang: '+(flipHero?'đã lật':'không lật'); }
+}
+renderGallery(); renderShop(); updateSlideView();
 </script>
 </body>
 </html>
