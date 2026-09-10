@@ -75,6 +75,8 @@
   .gallery .pick.sel .tick{display:block}
   .flip-row{display:flex; gap:8px; align-items:center; font-size:13px; margin:4px 0}
   .flip-row button{background:#3498db; color:#fff; padding:6px 12px; font-size:13px}
+  .size-row{display:flex; gap:8px; align-items:center; font-size:13px; margin:4px 0}
+  .size-row input[type=range]{flex:1}
   /* Mirror flip (face right), bg-blend, projectile, setup sub-tabs */
   .fighter.mirrored{transform:scaleX(-1)}
   .fighter.rmwhite img{mix-blend-mode:multiply}
@@ -255,6 +257,7 @@
     <label>Dán thêm link Boss mới: <input type="text" id="boss-url" placeholder="https://..."></label>
     <div class="gallery" id="boss-gallery"></div>
     <div class="flip-row"><button onclick="toggleFlip('boss')">⇋ Lật ngang Boss (quay mặt qua phải)</button><span id="boss-flip-state">Đang: đã lật (nhìn qua phải)</span></div>
+    <div class="size-row">Độ to Boss: <input type="range" id="boss-size" min="50" max="300" value="130" oninput="setSize('boss')"><span id="boss-size-val">130%</span></div>
     <label><input type="checkbox" id="boss-rmwhite" checked> Xóa nền trắng của Boss (nếu ảnh có nền trắng)</label>
   </fieldset>
 
@@ -265,6 +268,7 @@
     <label>Dán thêm link Player mới: <input type="text" id="hero-url" placeholder="https://..."></label>
     <div class="gallery" id="hero-gallery"></div>
     <div class="flip-row"><button onclick="toggleFlip('hero')">⇋ Lật ngang Player</button><span id="hero-flip-state">Đang: chưa lật</span></div>
+    <div class="size-row">Độ to Player: <input type="range" id="hero-size" min="50" max="300" value="130" oninput="setSize('hero')"><span id="hero-size-val">130%</span></div>
   </fieldset>
   </div>
   <div class="setup-pane hidden" id="sp-combo">
@@ -388,6 +392,21 @@ const HERO_CHOICES = [
 ];
 let selBoss = BOSS_CHOICES[0].src, selHero = HERO_CHOICES[0].src;
 let flipBoss = true, flipHero = false;
+let bossSize = 130, heroSize = 130;
+function setSize(who){
+  if(who==='boss'){ bossSize=parseInt($('boss-size').value)||130; $('boss-size-val').textContent=bossSize+'%'; }
+  else { heroSize=parseInt($('hero-size').value)||130; $('hero-size-val').textContent=heroSize+'%'; }
+  applySizes();
+}
+function applySizes(){
+  const b=$('boss-img'), h=$('hero-img');
+  if(b){ const s=Math.round(200*bossSize/100); b.style.width=s+'px'; b.style.height=s+'px'; }
+  if(h){ const s=Math.round(200*heroSize/100); h.style.width=s+'px'; h.style.height=s+'px'; }
+  const sb=$('status-badge');
+  if(sb) sb.style.bottom=Math.round(50+200*bossSize/100)+'px';
+  const lt=$('love-text');
+  if(lt) lt.style.bottom=Math.round(70+200*bossSize/100)+'px';
+}
 let rmWhiteBoss = true;
 const COMBO_CHOICES = [
   {name:'Ăn 1', src:'assets/combo/eat1.gif'},
@@ -490,6 +509,7 @@ function startArena(){
   applyBgmChoice();
   rmWhiteBoss=$('boss-rmwhite')?$('boss-rmwhite').checked:true;
   $('boss-img').src=bossSrc; $('hero-img').src=heroSrc;
+  applySizes();
   $('boss').classList.toggle('mirrored', flipBoss);
   $('boss').classList.toggle('rmwhite', rmWhiteBoss);
   $('hero').classList.toggle('mirrored', flipHero);
@@ -773,7 +793,7 @@ function throwBurger(){
     }, 4000);
   }, 750);
 }
-renderGallery(); renderShop(); updateSlideView();
+renderGallery(); renderShop(); updateSlideView(); applySizes();
 </script>
 </body>
 </html>
