@@ -17,7 +17,7 @@
   body{
     font-family:'Segoe UI',Tahoma,Verdana,sans-serif;
     background:var(--bg); color:#fff;
-    margin:0; padding:8px 24px; height:100vh;
+    margin:0; padding:8px 0; height:100vh;
     display:flex; flex-direction:column; align-items:center; gap:8px;
     overflow:hidden;
   }
@@ -25,7 +25,7 @@
   button{cursor:pointer; font-weight:bold; border:none; border-radius:10px}
 
   /* ---------- TOP BAR ---------- */
-  #topbar{width:100%; max-width:1280px; display:flex; align-items:center; gap:10px; flex-shrink:0}
+  #topbar{width:92vw; max-width:none; display:flex; align-items:center; gap:10px; flex-shrink:0}
   #topbar h1{font-size:18px; margin:0; flex:1}
   #btn-fullscreen{background:#2c3e50; color:#fff; padding:8px 12px; font-size:13px}
   #btn-bgm{background:#8e44ad; color:#fff; padding:8px 12px; font-size:16px}
@@ -104,7 +104,7 @@
   #bgm-btn{background:#8e44ad; color:#fff; padding:8px 12px; font-size:16px}
 
   /* ---------- ARENA SCREEN ---------- */
-  #screen-arena{width:100%; max-width:1280px; height:calc(100vh - 70px); display:flex; flex-direction:column; gap:6px}
+  #screen-arena{width:92vw; max-width:none; height:calc(100vh - 70px); display:flex; flex-direction:column; gap:6px}
   #clock-display{
     font-size:34px; font-weight:bold; font-family:monospace; text-align:center;
     background:#fff; color:#222; border-radius:12px; padding:2px 20px; align-self:center;
@@ -144,11 +144,11 @@
   }
   #arena .bg-layer{position:absolute; inset:0; background-image:url("assets/bg/jungle.jpg"); background-size:cover; background-position:center}
   #arena .ground{position:absolute; left:0; right:0; bottom:0; height:26px; background:rgba(0,0,0,.45)}
-  .fighter{position:absolute; bottom:26px; width:200px; text-align:center; transition:left .2s linear}
-  .fighter img{width:200px; height:200px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); animation:bounce 1.2s ease-in-out infinite}
+  .fighter{position:absolute; bottom:26px; text-align:center; transition:left .2s linear; overflow:visible}
+  .fighter img{width:200px; height:200px; object-fit:contain; display:block; margin:0 auto; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); animation:bounce 1.2s ease-in-out infinite}
   @keyframes bounce{50%{transform:translateY(-10px)}}
-  #boss{left:2%}
-  #hero{right:2%}
+  #boss{left:12px}
+  #hero{right:12px}
   /* Status badge above boss */
   #status-badge{
     position:absolute; bottom:250px; left:2%; min-width:110px; text-align:center;
@@ -400,12 +400,22 @@ function setSize(who){
 }
 function applySizes(){
   const b=$('boss-img'), h=$('hero-img');
-  if(b){ const s=Math.round(200*bossSize/100); b.style.width=s+'px'; b.style.height=s+'px'; }
-  if(h){ const s=Math.round(200*heroSize/100); h.style.width=s+'px'; h.style.height=s+'px'; }
+  let bw=260, hw=260;
+  if(b){ const s=Math.round(200*bossSize/100); b.style.width=s+'px'; b.style.height=s+'px'; bw=s; $('boss').style.width=s+'px'; }
+  if(h){ const s=Math.round(200*heroSize/100); h.style.width=s+'px'; h.style.height=s+'px'; hw=s; $('hero').style.width=s+'px'; }
   const sb=$('status-badge');
-  if(sb) sb.style.bottom=Math.round(50+200*bossSize/100)+'px';
+  if(sb) sb.style.bottom=(50+bw)+'px';
   const lt=$('love-text');
-  if(lt) lt.style.bottom=Math.round(70+200*bossSize/100)+'px';
+  if(lt) lt.style.bottom=(70+bw)+'px';
+}
+// Pixel-based walk: Boss can never leave the arena or overlap Hero at start.
+function bossRange(){
+  const arena=$('arena');
+  const bw=$('boss-img')?$('boss-img').clientWidth||260:260;
+  const hw=$('hero-img')?$('hero-img').clientWidth||260:260;
+  const W=arena?arena.clientWidth||800:800;
+  const startX=12, endX=Math.max(startX+50, W-hw-bw-24);
+  return {startX, endX};
 }
 let rmWhiteBoss = true;
 const COMBO_CHOICES = [
@@ -558,9 +568,11 @@ function updateGraphics(){
   fill.style.width=Math.min(100,bossProgress)+'%';
   fill.classList.toggle('mid', bossProgress>=50&&bossProgress<75);
   fill.classList.toggle('low', bossProgress>=75);
-  // Boss walks left -> right inside arena (2% .. 78%)
-  $('boss').style.left=(2+Math.min(76,bossProgress*0.76))+'%';
-  $('status-badge').style.left=(2+Math.min(76,bossProgress*0.76))+'%';
+  // Boss walks left -> right in pixels (start 12px, stop before Hero).
+  const r=bossRange();
+  const bx=r.startX+Math.min(1,bossProgress/100)*(r.endX-r.startX);
+  $('boss').style.left=bx+'px';
+  $('status-badge').style.left=bx+'px';
   const lt=$('love-text');
   if(!lt.classList.contains('hidden')) lt.style.left=(6+Math.min(70,bossProgress*0.7))+'%';
   // Status countdown ring text
