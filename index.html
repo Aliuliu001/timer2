@@ -56,7 +56,7 @@
   .file-label{background:#9b59b6; color:#fff; padding:8px 12px; border-radius:8px; display:inline-block}
   .btn-add{background:#555; color:#fff; padding:8px 12px}
   .btn-clear{background:var(--danger); color:#fff; padding:8px 12px}
-  #img-url-input{padding:8px; width:180px; border:1px solid #ccc; border-radius:6px}
+  #key-correct,#key-wrong{padding:8px; width:140px; border:1px solid #ccc; border-radius:6px}
   fieldset{border:1px solid #ddd; border-radius:10px; margin:10px 0; padding:10px}
   legend{font-weight:bold; padding:0 8px}
   fieldset label{font-size:13px; display:block; margin:6px 0}
@@ -194,11 +194,18 @@
     #clock-display{font-size:34px}
   }
 
-  /* ---------- SLIDESHOW (setup only) ---------- */
-  .slide-container{
-    position:relative; width:100%; aspect-ratio:2/1; background:#e9ecef;
-    border:3px dashed #ced4da; border-radius:10px; display:flex; align-items:center; justify-content:center;
-  }
+  /* ---------- COMBO FLAMES (power_up.gif per correct, not thrown) ---------- */
+  #combo-flames{display:flex; gap:4px; align-items:center}
+  #combo-flames img{width:30px; height:30px; object-fit:contain; filter:grayscale(1); opacity:.35}
+  #combo-flames img.lit{filter:none; opacity:1}
+  /* ---------- SKILL CAST FX ---------- */
+  #beam{position:absolute; height:34px; top:45%; background:linear-gradient(90deg,#b3f0ff,#2aa9ff,#b3f0ff); border-radius:17px; box-shadow:0 0 18px #5ecbff,0 0 40px #2aa9ff; z-index:6; transform-origin:left center}
+  #beam::after{content:''; position:absolute; right:-14px; top:50%; width:28px; height:28px; border-radius:50%; background:radial-gradient(circle,#fff 20%,#9be7ff 55%,transparent 75%); transform:translateY(-50%)}
+  .fireball-proj img{width:64px; height:64px; object-fit:contain; filter:drop-shadow(0 0 10px #ff922b) drop-shadow(4px 0 12px #ff5e00)}
+  .shake{animation:shk .45s linear}
+  @keyframes shk{25%{transform:translateX(-10px)}50%{transform:translateX(8px)}75%{transform:translateX(-6px)}}
+  #flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:7}
+  #clone-img{position:absolute; width:110px; bottom:26px; z-index:5}
   /* ---------- SKILL ORB (magic atom: icon inside rings + electrons) ---------- */
   #skill-shop{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
   .skill-orb{
@@ -221,10 +228,6 @@
   .boss-grow::after{content:''; position:absolute; left:50%; top:50%; width:140%; height:140%; transform:translate(-50%,-50%); border:2px dashed #ff922b; border-radius:50%; animation:spin 2s linear infinite}
   @keyframes ringOut{from{opacity:1; transform:translate(-50%,-50%) scale(.7)} to{opacity:0; transform:translate(-50%,-50%) scale(1.2)}}
   #projectile img{width:64px; height:64px; object-fit:contain}
-  #slide-image{max-width:100%; max-height:100%; object-fit:contain; display:none}
-  #empty-slide-text{color:#6c757d; font-weight:bold}
-  .nav-btn{position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,.4); color:#fff; width:40px; height:40px; border-radius:50%; font-size:20px; z-index:5}
-  .nav-btn.prev{left:10px} .nav-btn.next{right:10px}
 
   /* ---------- END SCREEN ---------- */
   #end-screen{
@@ -246,16 +249,15 @@
   <button id="btn-fullscreen" onclick="toggleFullScreen()">Phóng to ⛶</button>
 </div>
 
-<!-- ============ SETUP SCREEN (time, appearance, slideshow, food, sound) ============ -->
+<!-- ============ SETUP SCREEN ============ -->
 <div id="screen-setup" class="panel">
   <h2>Cài đặt</h2>
   <div class="setup-tabs">
     <button id="spb-time" class="active" onclick="showPane('time')">⏱ Giờ</button>
     <button id="spb-boss" onclick="showPane('boss')">👹 Boss</button>
     <button id="spb-hero" onclick="showPane('hero')">🦸 Player</button>
-    <button id="spb-skill" onclick="showPane('skill')">✨ Skill</button>
+    <button id="spb-skill" onclick="showPane('skill')">✨ Skill + Đồ ăn</button>
     <button id="spb-bg" onclick="showPane('bg')">🌳 Nền+Nhạc</button>
-    <button id="spb-slide" onclick="showPane('slide')">🖼 Chiếu hình</button>
     <button id="spb-keys" onclick="showPane('keys')">⌨ Nút bấm</button>
   </div>
   <div class="setup-pane" id="sp-time">
@@ -296,8 +298,13 @@
   <div class="setup-pane hidden" id="sp-skill">
   <fieldset>
     <legend>Skill của Hero — tick chọn skill được dùng (bỏ tick = tắt)</legend>
-    <div class="row"><button class="btn-add" onclick="toggleAllSkills(true)">Tick chọn tất cả</button><button class="btn-clear" onclick="toggleAllSkills(false)">Bỏ chọn tất cả</button></div>
+    <div class="row"><button class="btn-add" onclick="toggleAllSkills('hero',true)">Tick chọn tất cả</button><button class="btn-clear" onclick="toggleAllSkills('hero',false)">Bỏ chọn tất cả</button></div>
     <div id="skill-pick" style="margin-top:10px"></div>
+  </fieldset>
+  <fieldset>
+    <legend>Đồ ăn — quăng cho Boss, Boss biến thành ảnh đang ăn</legend>
+    <div class="row"><button class="btn-add" onclick="toggleAllSkills('food',true)">Tick chọn tất cả</button><button class="btn-clear" onclick="toggleAllSkills('food',false)">Bỏ chọn tất cả</button></div>
+    <div id="food-pick" style="margin-top:10px"></div>
   </fieldset>
   <fieldset>
     <legend>Skill riêng của Boss — ăn xong to thêm + chạy nhanh</legend>
@@ -313,26 +320,6 @@
     <div class="row"><button class="btn-add" onclick="saveBg()">Lưu nền này</button></div>
   </fieldset>
 
-  </div>
-  <div class="setup-pane hidden" id="sp-slide">
-  <fieldset>
-    <legend>Hình trình chiếu (chỉ hiện ở đây, màn chơi không hiện)</legend>
-    <div class="row">
-      <input type="text" id="img-url-input" placeholder="Dán link ảnh...">
-      <button class="btn-add" onclick="addUrlImage()">Thêm Link</button>
-      <label for="img-file-input" class="file-label">Chọn ảnh từ máy</label>
-      <input type="file" id="img-file-input" accept="image/*" multiple onchange="addLocalImages(event)" class="hidden">
-      <button class="btn-clear" onclick="clearAllImages()">Xóa tất cả</button>
-    </div>
-    <div class="slide-container" style="margin-top:10px">
-      <button class="nav-btn prev" onclick="changeSlide(-1)">&#10094;</button>
-      <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden">
-        <img id="slide-image" src="" alt="Slide">
-        <div id="empty-slide-text">Chưa có dữ liệu hình ảnh</div>
-      </div>
-      <button class="nav-btn next" onclick="changeSlide(1)">&#10095;</button>
-    </div>
-  </fieldset>
   </div>
   <div class="setup-pane hidden" id="sp-keys">
   <fieldset>
@@ -375,6 +362,9 @@
     <div class="fighter" id="boss"><img id="boss-img" alt="Boss"></div>
     <div class="fighter" id="hero"><img id="hero-img" alt="Hero"></div>
     <div id="projectile" class="hidden">🍔</div>
+    <div id="beam" class="hidden"></div>
+    <div id="flash"></div>
+    <img id="clone-img" class="hidden" src="assets/slime_clone.png" alt="clone">
     <div id="status-badge" class="hidden">🍽️<small id="status-time"></small></div>
     <div id="love-text" class="hidden">I love you, Ms. Vi</div>
   </div>
@@ -387,15 +377,16 @@
     </div>
     <div id="meter-row">
       <div>Mana: <span id="mana-dots">○○○○○</span></div>
-      <div id="combo-label">Combo: 0/5</div>
+      <div id="combo-flames"><img data-i="0" src="assets/power_up.gif" alt="combo"><img data-i="1" src="assets/power_up.gif" alt="combo"><img data-i="2" src="assets/power_up.gif" alt="combo"><img data-i="3" src="assets/power_up.gif" alt="combo"><img data-i="4" src="assets/power_up.gif" alt="combo"></div>
       <div class="buttons">
         <button id="btn-pause" class="hidden" onclick="pauseGame()">Dừng</button>
         <button id="btn-resume" class="hidden" onclick="resumeGame()">Tiếp tục</button>
         <button id="btn-reset" onclick="quitArena()">Thoát</button>
       </div>
     </div>
-    <!-- SHOP: 6 cards rendered from FOOD_ITEMS (add item 7 = add 1 object, no logic change) -->
+    <!-- SHOP: skill orbs + food cards -->
     <div id="shop"></div>
+    <div id="food-shop"></div>
   </div>
 </div>
 
@@ -446,26 +437,34 @@ function bossRange(){
   return {startX, endX};
 }
 let rmWhiteBoss = true;
-const SKILL_ITEMS = [
-  {id:'kamehameha', name:'Kamekame',  icon:'assets/kamekameha.gif',    price:5, eatSeconds:4, effect:'none',   enabled:true},
-  {id:'fireball',   name:'Fireball',  icon:'assets/Fireball.gif',      price:5, eatSeconds:4, effect:'fire',   enabled:true},
-  {id:'icefreeze',  name:'Ice Freeze',icon:'assets/giant-snowball.png',price:5, eatSeconds:4, effect:'frozen', enabled:true},
-  {id:'deepfreeze', name:'Deep Freeze',icon:'assets/frost-nova.png',   price:5, eatSeconds:5, effect:'frozen', enabled:true},
-  {id:'thunder',    name:'Thunder',   icon:'assets/thundersphere.png', price:5, eatSeconds:3, effect:'stun',   enabled:true},
-  {id:'shadowclone',name:'Shadow Clone',icon:'assets/slime_clone.png', price:5, eatSeconds:4, effect:'none',   enabled:true},
-  {id:'dash',       name:'Dash',      icon:'assets/hammer.png',        price:5, eatSeconds:3, effect:'fast',   enabled:true},
+// Hero attack skills: each has its own cast mechanic (beam / fireball / ice / clone / hammer).
+const HERO_SKILLS = [
+  {id:'kamehameha', name:'Kamekame',  icon:'assets/kamekameha.gif',    price:5, kind:'beam',     enabled:true},
+  {id:'fireball',   name:'Fireball',  icon:'assets/Fireball.gif',      price:5, kind:'fireball', enabled:true},
+  {id:'icefreeze',  name:'Ice Freeze',icon:'assets/giant-snowball.png',price:5, kind:'ice',      enabled:true, freezeSec:4},
+  {id:'deepfreeze', name:'Deep Freeze',icon:'assets/frost-nova.png',   price:5, kind:'ice',      enabled:true, freezeSec:5},
+  {id:'thunder',    name:'Thunder',   icon:'assets/thundersphere.png', price:5, kind:'thunder',  enabled:true, stunSec:3},
+  {id:'shadowclone',name:'Shadow Clone',icon:'assets/slime_clone.png', price:5, kind:'clone',    enabled:true},
+  {id:'dash',       name:'Dash',      icon:'assets/hammer.png',        price:5, kind:'dash',     enabled:true},
 ];
-const COMBO_FLAME = 'assets/power_up.gif';
-let selCombo = COMBO_FLAME;
+const SKILL_ITEMS = HERO_SKILLS; // alias for shop logic
+// 6 food dishes: thrown to Boss, Boss sits and eats (swap to eat.gif), then grows.
+const EAT_IMAGE = 'assets/combo/eat.gif';
 function showPane(name){
-  ['time','boss','hero','skill','bg','slide','keys'].forEach(p=>{
+  ['time','boss','hero','skill','bg','keys'].forEach(p=>{
     $('sp-'+p).classList.toggle('hidden', p!==name);
     $('spb-'+p).classList.toggle('active', p===name);
   });
 }
-// ONE array drives all food items. To add item 7, copy one object. No logic change.
-const EFFECT_ICON = {none:'🍽️', frozen:'❄️', poison:'☠️', fire:'🔥', love:'💗', stun:'⚡', fast:'🚀'};
-const FOOD_ITEMS = SKILL_ITEMS; // shop + food logic reuse the skill list
+// ONE array drives the 6 food dishes. To add dish 7, copy one object. No logic change.
+const FOOD_ITEMS = [
+  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, enabled:true},
+  {id:'icecream',name:'Kem',   icon:'🍦', price:5, eatSeconds:4, enabled:true},
+  {id:'mushroom',name:'Nấm',   icon:'🍄', price:5, eatSeconds:5, enabled:true},
+  {id:'chili',   name:'Ớt',    icon:'🌶️', price:5, eatSeconds:4, enabled:true},
+  {id:'noodles', name:'Mì',    icon:'🍜', price:5, eatSeconds:5, enabled:true},
+  {id:'teacher', name:'Cô giáo',icon:'👩‍🏫', price:5, eatSeconds:5, enabled:true},
+];
 // ONE object drives settings. New field = add one key.
 const SETTINGS = {timerSeconds:120, keyCorrect:'ArrowRight', keyWrong:'ArrowLeft', mouseZone:true};
 // Sound slots filled from LOCAL files only (browser blocks outside mp3 links).
@@ -479,7 +478,6 @@ let bossSlowUntil=0;         // timestamp: boss walks half speed
 let mana=0, combo=0;
 let bossFastUntil=0;      // timestamp: boss walks double speed (grow buff)
 let bossGrowScale=1;      // permanent size multiplier from boss skill (+10%/eat)
-let slides=[], currentSlideIdx=0;
 
 /* ================= HELPERS ================= */
 const $ = id => document.getElementById(id);
@@ -505,25 +503,7 @@ function setPreset(sec, btn){
   SETTINGS.timerSeconds=sec;
 }
 
-/* ================= SLIDESHOW (setup only) ================= */
-function addUrlImage(){
-  const inp=$('img-url-input'), url=inp.value.trim();
-  if(url){ slides.push(url); inp.value=''; updateSlideView(); }
-}
-function addLocalImages(e){
-  for(const f of e.target.files) slides.push(URL.createObjectURL(f));
-  e.target.value=''; updateSlideView();
-}
-function clearAllImages(){ slides=[]; currentSlideIdx=0; updateSlideView(); }
-function changeSlide(d){
-  if(!slides.length) return;
-  currentSlideIdx=(currentSlideIdx+d+slides.length)%slides.length; updateSlideView();
-}
-function updateSlideView(){
-  const img=$('slide-image'), empty=$('empty-slide-text');
-  if(slides.length){ img.src=slides[currentSlideIdx]; img.style.display='block'; empty.style.display='none'; }
-  else { img.style.display='none'; empty.style.display='block'; }
-}
+/* ================= SLIDESHOW REMOVED (tab Chieu hinh deleted) ================= */
 
 /* ================= ARENA START/STOP ================= */
 function startArena(){
@@ -633,15 +613,16 @@ function returnToSetup(){ $('end-screen').classList.add('hidden'); showTab('setu
 function onCorrect(){
   if($('screen-arena').classList.contains('hidden')) return;
   mana=Math.min(10,mana+1); combo++;
+  updateMeters(); renderShop();
   if(combo>=5){
-    combo=0; // free gift does not cost mana
+    combo=0; // free hero skill cast, does not cost mana
+    updateMeters();
     const banner=$('combo-banner');
-    banner.textContent='🎉 COMBO 5! Hero tung lửa!';
+    banner.textContent='🎉 COMBO 5! Hero tung skill!';
     banner.classList.remove('hidden');
     setTimeout(()=>banner.classList.add('hidden'),2500);
-    throwBurger();
+    castRandomSkill();
   }
-  updateMeters(); renderShop();
 }
 function onWrong(){
   if($('screen-arena').classList.contains('hidden')) return;
@@ -649,7 +630,7 @@ function onWrong(){
 }
 function updateMeters(){
   $('mana-dots').textContent='●'.repeat(Math.min(5,mana))+'○'.repeat(5-Math.min(5,mana));
-  $('combo-label').textContent='Combo: '+combo+'/5';
+  document.querySelectorAll('#combo-flames img').forEach((im,i)=>im.classList.toggle('lit', i<combo));
 }
 // Keyboard + mouse-zone inputs (same core as buttons).
 document.addEventListener('keydown', e=>{
@@ -671,34 +652,169 @@ function skillIconHtml(f, size){
 }
 function renderShop(){
   const shop=$('shop'); if(!shop) return; shop.innerHTML='';
-  shop.id='shop'; shop.style.cssText='';
-  const wrap=document.createElement('div'); wrap.id='skill-shop'; wrap.style.gridColumn='1/-1'; wrap.style.display='contents';
-  for(const f of FOOD_ITEMS){
+  for(const f of HERO_SKILLS){
     if(f.enabled===false) continue;
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='skill-orb '+(ready?'ready':'locked');
     d.innerHTML=skillIconHtml(f,40)+'<div>'+f.name+'</div><div class="price">5 ●</div>';
-    d.title=f.name+' — đứng yên '+f.eatSeconds+'s';
-    d.onclick=()=>buyFood(f.id);
+    d.title='Skill: '+f.name;
+    d.onclick=()=>castSkill(f.id,false);
     shop.appendChild(d);
   }
   shop.style.display='grid'; shop.style.gridTemplateColumns='repeat(4,1fr)'; shop.style.gap='10px';
+  const fs=$('food-shop'); if(!fs) return; fs.innerHTML='';
+  for(const f of FOOD_ITEMS){
+    if(f.enabled===false) continue;
+    const ready=mana>=f.price;
+    const d=document.createElement('div');
+    d.className='food-card '+(ready?'ready':'locked');
+    d.innerHTML='<div style="font-size:26px">'+f.icon+'</div><div>'+f.name+'</div><div class="price">5 ●</div>';
+    d.title=f.name+' — Boss ngồi ăn '+f.eatSeconds+'s';
+    d.onclick=()=>buyFood(f.id);
+    fs.appendChild(d);
+  }
+  fs.style.display='grid'; fs.style.gridTemplateColumns='repeat(6,1fr)'; fs.style.gap='8px'; fs.style.marginTop='8px';
 }
 function renderSkillPick(){
-  const box=$('skill-pick'); if(!box) return; box.innerHTML='';
-  box.style.display='grid'; box.style.gridTemplateColumns='repeat(4,1fr)'; box.style.gap='10px';
-  for(const f of SKILL_ITEMS){
-    const d=document.createElement('div');
-    d.className='skill-orb '+((f.enabled!==false)?'ready':'off');
-    d.innerHTML=skillIconHtml(f,40)+'<div>'+f.name+'</div><label style="font-size:12px"><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> dùng</label>';
-    d.querySelector('input').onchange=(e)=>{ f.enabled=e.target.checked; d.classList.toggle('off',!f.enabled); d.classList.toggle('ready',f.enabled); renderShop(); };
-    d.onclick=(e)=>{ if(e.target.tagName!=='INPUT'){ f.enabled=!(f.enabled!==false); renderSkillPick(); renderShop(); } };
-    box.appendChild(d);
+  const box=$('skill-pick'); if(box){
+    box.innerHTML='';
+    box.style.display='grid'; box.style.gridTemplateColumns='repeat(4,1fr)'; box.style.gap='10px';
+    for(const f of HERO_SKILLS){
+      const d=document.createElement('div');
+      d.className='skill-orb '+((f.enabled!==false)?'ready':'off');
+      d.innerHTML=skillIconHtml(f,40)+'<div>'+f.name+'</div><label style="font-size:12px"><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> dùng</label>';
+      d.querySelector('input').onchange=(e)=>{ f.enabled=e.target.checked; d.classList.toggle('off',!f.enabled); d.classList.toggle('ready',f.enabled); renderShop(); };
+      d.onclick=(e)=>{ if(e.target.tagName!=='INPUT'){ f.enabled=!(f.enabled!==false); renderSkillPick(); renderShop(); } };
+      box.appendChild(d);
+    }
+  }
+  const fb=$('food-pick'); if(fb){
+    fb.innerHTML='';
+    fb.style.display='grid'; fb.style.gridTemplateColumns='repeat(6,1fr)'; fb.style.gap='8px';
+    for(const f of FOOD_ITEMS){
+      const d=document.createElement('div');
+      d.className='food-card '+((f.enabled!==false)?'ready':'locked');
+      d.innerHTML='<div style="font-size:26px">'+f.icon+'</div><div>'+f.name+'</div><label style="font-size:12px"><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> dùng</label>';
+      d.querySelector('input').onchange=(e)=>{ f.enabled=e.target.checked; renderShop(); };
+      d.onclick=(e)=>{ if(e.target.tagName!=='INPUT'){ f.enabled=!(f.enabled!==false); renderSkillPick(); renderShop(); } };
+      fb.appendChild(d);
+    }
   }
 }
-function toggleAllSkills(on){ SKILL_ITEMS.forEach(f=>f.enabled=on); renderSkillPick(); renderShop(); }
-function buyFood(id){ applyFood(id,false); }
+function toggleAllSkills(which, on){
+  if(which==='food'){ FOOD_ITEMS.forEach(f=>f.enabled=on); }
+  else { HERO_SKILLS.forEach(f=>f.enabled=on); }
+  renderSkillPick(); renderShop();
+}
+// Skill positions: measure Hero/Boss centers in the arena.
+function castGeom(){
+  const arena=$('arena'), bossBox=$('boss'), heroBox=$('hero');
+  const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect(), hr=heroBox.getBoundingClientRect();
+  const top=(hr.top+hr.height*0.4)-ar.top;
+  return {heroX:(hr.left+hr.width*0.2)-ar.left, bossX:(br.left+br.width*0.6)-ar.left, top};
+}
+function castSkill(id, free){
+  const f=HERO_SKILLS.find(x=>x.id===id); if(!f) return;
+  if(f.enabled===false){ alert('Skill này đang tắt tick!'); return; }
+  if(!free){
+    if(mana<f.price){ alert('Chưa đủ 5 điểm xanh!'); return; }
+    mana-=f.price;
+  }
+  updateMeters(); renderShop();
+  if(f.kind==='beam') castBeam(f);
+  else if(f.kind==='fireball') castFireball(f);
+  else if(f.kind==='ice') castIce(f);
+  else if(f.kind==='thunder') castThunder(f);
+  else if(f.kind==='clone') castClone(f);
+  else if(f.kind==='dash') castDash(f);
+}
+function castRandomSkill(){
+  const pool=HERO_SKILLS.filter(f=>f.enabled!==false);
+  if(!pool.length) return;
+  castSkill(pool[Math.floor(Math.random()*pool.length)].id, true);
+}
+// 1) Kamekame: beam from Hero, Boss shakes + knocked back.
+function castBeam(f){
+  const g=castGeom(), beam=$('beam');
+  beam.style.left=g.heroX+'px'; beam.style.top=g.top+'px'; beam.style.width='0px';
+  beam.classList.remove('hidden');
+  requestAnimationFrame(()=>{ beam.style.transition='width .35s linear'; beam.style.width=Math.max(60,(g.bossX-g.heroX))+'px'; });
+  setTimeout(()=>{
+    const bossBox=$('boss');
+    bossBox.classList.remove('shake'); void bossBox.offsetWidth; bossBox.classList.add('shake');
+    bossProgress=Math.max(0,bossProgress-4); // knocked back
+    updateGraphics();
+    setTimeout(()=>{ beam.classList.add('hidden'); beam.style.transition=''; }, 350);
+  }, 380);
+}
+// 2) Fireball: flaming ball with tail flies Hero -> Boss.
+function castFireball(f){
+  const g=castGeom(), arena=$('arena'), proj=$('projectile');
+  proj.className='fireball-proj'; proj.innerHTML='<img src="'+f.icon+'" alt="fireball">';
+  proj.style.position='absolute'; proj.style.bottom='auto'; proj.style.top=g.top+'px';
+  proj.classList.remove('hidden'); proj.style.left=g.heroX+'px';
+  void proj.offsetWidth; proj.style.transition='left .6s linear'; proj.style.left=g.bossX+'px';
+  setTimeout(()=>{
+    proj.classList.add('hidden'); proj.style.transition='';
+    const bossBox=$('boss');
+    bossBox.classList.remove('shake'); void bossBox.offsetWidth; bossBox.classList.add('shake');
+    bossBox.classList.add('tint-fire');
+    $('status-badge').innerHTML='🔥 Fireball<small id="status-time"></small>';
+    $('status-badge').classList.remove('hidden');
+    bossSlowUntil=performance.now()+4000;
+    setTimeout(()=>{ bossBox.classList.remove('tint-fire'); $('status-badge').classList.add('hidden'); }, 4000);
+  }, 620);
+}
+// 3) Ice / Deep Freeze: ice ball hits, Boss frozen.
+function castIce(f){
+  const g=castGeom(), proj=$('projectile');
+  proj.className=''; proj.innerHTML='<img src="'+f.icon+'" style="width:56px;height:56px" alt="ice">';
+  proj.style.position='absolute'; proj.style.top=g.top+'px';
+  proj.classList.remove('hidden'); proj.style.left=g.heroX+'px';
+  void proj.offsetWidth; proj.style.transition='left .55s linear'; proj.style.left=g.bossX+'px';
+  setTimeout(()=>{
+    proj.classList.add('hidden'); proj.style.transition='';
+    const bossBox=$('boss');
+    bossBox.classList.add('tint-blue');
+    $('status-badge').innerHTML='❄️ Đóng băng<small id="status-time"></small>';
+    $('status-badge').classList.remove('hidden');
+    bossFrozenUntil=performance.now()+(f.freezeSec||4)*1000;
+    setTimeout(()=>{ bossBox.classList.remove('tint-blue'); $('status-badge').classList.add('hidden'); }, (f.freezeSec||4)*1000);
+  }, 570);
+}
+// 4) Thunder: flash + shake + stun.
+function castThunder(f){
+  const fl=$('flash');
+  fl.style.transition='none'; fl.style.opacity='0.9';
+  requestAnimationFrame(()=>{ fl.style.transition='opacity .5s'; fl.style.opacity='0'; });
+  const bossBox=$('boss');
+  bossBox.classList.remove('shake'); void bossBox.offsetWidth; bossBox.classList.add('shake');
+  $('status-badge').innerHTML='⚡ Sét đánh<small id="status-time"></small>';
+  $('status-badge').classList.remove('hidden');
+  bossFrozenUntil=performance.now()+(f.stunSec||3)*1000;
+  setTimeout(()=>{ $('status-badge').classList.add('hidden'); }, (f.stunSec||3)*1000);
+}
+// 5) Shadow Clone: slime appears beside Boss.
+function castClone(f){
+  const bossBox=$('boss'), cl=$('clone-img');
+  cl.style.left=(bossBox.offsetLeft-120)+'px';
+  cl.classList.remove('hidden');
+  $('status-badge').innerHTML='👿 Phân thân<small id="status-time"></small>';
+  $('status-badge').classList.remove('hidden');
+  bossSlowUntil=performance.now()+4000;
+  setTimeout(()=>{ cl.classList.add('hidden'); $('status-badge').classList.add('hidden'); }, 4000);
+}
+// 6) Dash: Boss knocked back fast.
+function castDash(f){
+  const bossBox=$('boss');
+  bossBox.classList.remove('shake'); void bossBox.offsetWidth; bossBox.classList.add('shake');
+  bossProgress=Math.max(0,bossProgress-8);
+  $('status-badge').innerHTML='🚀 Húc văng<small id="status-time"></small>';
+  $('status-badge').classList.remove('hidden');
+  updateGraphics();
+  setTimeout(()=>{ $('status-badge').classList.add('hidden'); }, 2500);
+}
 // Boss skill: after eating, grows +% size + runs fast X sec, with glow rings.
 function bossGrow(){
   const pct=parseInt($('boss-grow-pct').value)||10;
@@ -712,58 +828,37 @@ function bossGrow(){
   badge.classList.remove('hidden');
   setTimeout(()=>{ bossBox.classList.remove('boss-grow'); }, sec*1000);
 }
-function applyFood(id, free){
+function applyFood(id){
   const f=FOOD_ITEMS.find(x=>x.id===id); if(!f) return;
-  if(f.enabled===false){ alert('Skill này đang tắt tick!'); return; }
-  if(!free){
-    if(mana<f.price){ alert('Chưa đủ 5 điểm xanh!'); return; }
-    mana-=f.price;
-  }
+  if(f.enabled===false){ alert('Món này đang tắt tick!'); return; }
+  if(mana<f.price){ alert('Chưa đủ 5 điểm xanh!'); return; }
+  mana-=f.price;
   updateMeters(); renderShop();
-  throwSkill(f);
+  throwFood(f);
 }
-// Skill flies from Hero to Boss inside magic orb, then hits.
-function throwSkill(f){
-  const arena=$('arena'), proj=$('projectile');
-  const bossBox=$('boss');
-  const ax=arena.clientWidth;
-  const bx=bossBox.offsetLeft+40, hx=ax-80;
-  const iconImg = (f.icon.indexOf('assets/')===0) ? '<img src="'+f.icon+'" alt="'+f.name+'">' : '<span style="font-size:48px">'+f.icon+'</span>';
-  proj.innerHTML='<span style="position:relative;display:inline-block">'+iconImg+'<span style="position:absolute;inset:-8px;border:2px solid #7b61ff;border-radius:50%"></span></span>';
-  proj.classList.remove('hidden');
-  proj.style.left=hx+'px';
-  void proj.offsetWidth;
-  proj.style.left=bx+'px';
+// Food flies Hero -> Boss, Boss swaps to eating gif (EAT_IMAGE), sits, then grows.
+function throwFood(f){
+  const g=castGeom(), proj=$('projectile');
+  proj.className=''; proj.innerHTML='<span style="font-size:48px">'+f.icon+'</span>';
+  proj.style.position='absolute'; proj.style.top=g.top+'px';
+  proj.classList.remove('hidden'); proj.style.left=g.heroX+'px';
+  void proj.offsetWidth; proj.style.transition='left .55s linear'; proj.style.left=g.bossX+'px';
   setTimeout(()=>{
-    proj.classList.add('hidden');
-    hitSkill(f);
-  }, 750);
-}
-function hitSkill(f){
-  const now=performance.now();
-  const bossImg=$('boss-img'), badge=$('status-badge'), bossBox=$('boss'), love=$('love-text');
-  // Phase 1: eating — freeze walk, show icon.
-  bossFrozenUntil=now+f.eatSeconds*1000;
-  bossBox.classList.remove('tint-green','tint-blue','tint-fire');
-  love.classList.add('hidden');
-  if(f.effect==='frozen') bossBox.classList.add('tint-blue');
-  if(f.effect==='fire') bossBox.classList.add('tint-fire');
-  const iconShow=(f.icon.indexOf('assets/')===0)?'<img src="'+f.icon+'" style="width:30px;height:30px;vertical-align:middle">':f.icon;
-  badge.innerHTML=EFFECT_ICON[f.effect]+' '+iconShow+' '+f.name+'<small id="status-time"></small>';
-  badge.classList.remove('hidden');
-  updateMeters(); renderShop();
-  // Phase 2: after eating — extra effect + Boss own skill (grow + fast).
-  setTimeout(()=>{
-    if(f.effect==='fire'){ bossSlowUntil=performance.now()+4000; }
-    if(f.effect==='stun'){ bossSlowUntil=performance.now()+3000; }
-    bossGrow();
+    proj.classList.add('hidden'); proj.style.transition='';
+    const now=performance.now();
+    const bossImg=$('boss-img'), badge=$('status-badge'), love=$('love-text');
+    const keepSrc=$('boss-url').value.trim()||selBoss||'assets/boss/boss1.gif';
+    bossImg.src=EAT_IMAGE; // Boss sits and eats
+    bossFrozenUntil=now+f.eatSeconds*1000;
+    love.classList.add('hidden');
+    badge.innerHTML='🍽️ '+f.icon+' '+f.name+'<small id="status-time"></small>';
+    badge.classList.remove('hidden');
+    updateMeters(); renderShop();
     setTimeout(()=>{
-      const bUrl=$('boss-url').value.trim()||selBoss||'assets/boss/boss1.gif';
-      bossImg.src=bUrl;
-      bossBox.classList.remove('tint-green','tint-blue','tint-fire');
-      badge.classList.add('hidden');
-    }, 1500);
-  }, f.eatSeconds*1000);
+      bossImg.src=keepSrc;
+      bossGrow();
+    }, f.eatSeconds*1000);
+  }, 570);
 }
 
 /* ================= MUSIC (repo mp3 remembered, upload also works) ================= */
@@ -831,17 +926,7 @@ function renderGallery(){
     d.onclick=()=>{ selHero=c.src; $('hero-url').value=''; renderGallery(); };
     hg.appendChild(d);
   });
-  const cg=$('combo-gallery');
-  if(cg){
-    cg.innerHTML='';
-    COMBO_CHOICES.forEach((c)=>{
-      const d=document.createElement('div');
-      d.className='pick'+(selCombo===c.src?' sel':'');
-      d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>';
-      d.onclick=()=>{ selCombo=c.src; renderGallery(); };
-      cg.appendChild(d);
-    });
-  }
+// First paint (no combo gallery: flames are fixed power_up.gif)
 }
 function addPastedLinks(){
   const b=$('boss-url').value.trim();
@@ -853,36 +938,9 @@ function toggleFlip(who){
   if(who==='boss'){ flipBoss=!flipBoss; $('boss-flip-state').textContent='Đang: '+(flipBoss?'đã lật (nhìn qua phải)':'chưa lật (nhìn qua trái)'); $('boss').classList.toggle('mirrored', flipBoss); }
   else { flipHero=!flipHero; $('hero-flip-state').textContent='Đang: '+(flipHero?'đã lật':'chưa lật'); $('hero').classList.toggle('mirrored', flipHero); }
 }
-// Combo-5: Hero casts flame (power_up.gif) from Hero to Boss, then Boss grows.
-function throwBurger(){
-  const arena=$('arena'), proj=$('projectile');
-  const bossBox=$('boss');
-  const ax=arena.clientWidth;
-  const bx=bossBox.offsetLeft+40, hx=ax-80;
-  proj.innerHTML='<img src="'+selCombo+'" alt="flame"><span style="position:absolute;inset:-8px;border:2px solid #ff922b;border-radius:50%"></span>';
-  proj.style.position='absolute'; proj.style.bottom='120px';
-  proj.classList.remove('hidden');
-  proj.style.left=hx+'px';
-  // force reflow then slide to boss
-  void proj.offsetWidth;
-  proj.style.left=bx+'px';
-  setTimeout(()=>{
-    proj.classList.add('hidden');
-    // Hit: freeze boss 4s + flame flash, then Boss skill (grow + fast).
-    const now=performance.now();
-    const bossImg=$('boss-img'), badge=$('status-badge');
-    const keepSrc=$('boss-url').value.trim()||selBoss||'assets/boss/boss1.gif';
-    bossImg.src=selCombo||'assets/power_up.gif';
-    bossFrozenUntil=now+4000;
-    badge.innerHTML='🔥 COMBO!<small id="status-time"></small>';
-    badge.classList.remove('hidden');
-    setTimeout(()=>{
-      bossImg.src=keepSrc;
-      bossGrow();
-    }, 4000);
-  }, 750);
-}
-renderGallery(); renderShop(); renderSkillPick(); updateSlideView(); applySizes();
+const COMBO_FLAMES = ['assets/power_up.gif','assets/power_up.gif','assets/power_up.gif','assets/power_up.gif','assets/power_up.gif'];
+// Combo-5 is handled by castRandomSkill() (free hero skill). No burger throw.
+renderGallery(); renderShop(); renderSkillPick(); applySizes();
 </script>
 </body>
 </html>
