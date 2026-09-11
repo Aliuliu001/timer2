@@ -257,6 +257,13 @@
   .burning img{animation:burnShk .3s linear infinite !important; filter:drop-shadow(0 0 18px #ff5e00) sepia(.7) saturate(2.2) hue-rotate(-25deg) !important}
   @keyframes burnShk{25%{transform:translateX(-6px) scale(1.02)}50%{transform:translateX(5px)}75%{transform:translateX(-3px) scale(1.04)}}
   .fire-aura{position:absolute; border-radius:50%; border:4px solid rgba(255,94,0,.85); box-shadow:0 0 24px #ff5e00, inset 0 0 24px rgba(255,94,0,.5); animation:ringOut 1s ease-out infinite; pointer-events:none; z-index:5}
+  /* ---------- AFTER-EAT STATES (stage 2, on Boss body) ---------- */
+  #ice-block{position:absolute; z-index:7; pointer-events:none; border-radius:18px;
+    background:linear-gradient(160deg,rgba(186,230,253,.75),rgba(56,189,248,.55));
+    border:5px solid rgba(14,165,233,.9); box-shadow:0 0 26px rgba(56,189,248,.9), inset 0 0 26px rgba(255,255,255,.5)}
+  #ice-block.crack{animation:iceCrack .5s ease-out forwards}
+  @keyframes iceCrack{to{opacity:0; transform:scale(1.25) rotate(4deg)}}
+  .after-float{position:absolute; z-index:7; pointer-events:none; animation:rise 1.4s ease-out forwards}
   /* ---------- END SCREEN win/lose ---------- */
   #end-title.win{color:#ffd43b; text-shadow:4px 4px 0 #000, 0 0 30px #ffd43b}
   #end-title.lose{color:#ff6b6b; text-shadow:4px 4px 0 #000, 0 0 30px #ff0000}
@@ -467,6 +474,7 @@
     <img id="olaf-img" class="hidden" src="assets/Snow-Olaf.png" alt="Olaf">
     <div id="poison-layer" class="hidden"></div>
     <div id="status-badge" class="hidden">🍽️<small id="status-time"></small></div>
+    <div id="ice-block" class="hidden">🧊</div>
     <div id="eat-frame" class="hidden"><img id="eat-gif" alt="eating"><span id="eat-fx-badge"></span></div>
     <div id="love-text" class="hidden">I love you, Ms. Vi</div>
   </div>
@@ -564,15 +572,17 @@ function showPane(name){
   if(name==='skill') renderDishTiming();
 }
 // ONE array drives the food dishes. Add dish 7 with + Add dish button. No logic change.
-// fx: eat = just sits & eats | burn = spicy red | freeze = icy blue + snow | poison = green + slow
-// gifSec = seconds the eating gif shows (Boss hides) | extraSec = seconds Boss keeps colour + walks slow after gif
+// fx = look WHILE eating (frame colour + falling FX) | after + afterFx = Boss state AFTER gif ends.
+// after: normal = walks on | stop = stands still (ice block) | slow = half speed | fast = double speed
+// afterFx: none | ice (🧊 block, cracks open at end) | poison (💀 + green smoke) | fire (🔥 burns) | hearts (💕)
+// gifSec = seconds the eating gif shows (Boss hides) | extraSec = seconds the after-state lasts
 const FOOD_ITEMS = [
-  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, fx:'eat', enabled:true, gifSec:6, extraSec:0, gifUrl:'', gifFlip:false, gifRmwhite:true},
-  {id:'icecream',name:'Ice Cream', icon:'🍦', price:5, eatSeconds:4, fx:'freeze', enabled:true, gifSec:4, extraSec:2, gifUrl:'', gifFlip:false, gifRmwhite:true},
-  {id:'mushroom',name:'Mushroom',icon:'🍄', price:5, eatSeconds:5, fx:'poison', enabled:true, gifSec:5, extraSec:3, gifUrl:'', gifFlip:false, gifRmwhite:true},
-  {id:'chili',   name:'Chili',   icon:'🌶️', price:5, eatSeconds:4, fx:'burn', enabled:true, gifSec:4, extraSec:3, gifUrl:'', gifFlip:false, gifRmwhite:true},
-  {id:'noodles', name:'Noodles', icon:'🍜', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:0, gifUrl:'', gifFlip:false, gifRmwhite:true},
-  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:0, gifUrl:'', gifFlip:false, gifRmwhite:true},
+  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, fx:'eat', enabled:true, gifSec:6, extraSec:0, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'normal', afterFx:'none', afterImg:''},
+  {id:'icecream',name:'Ice Cream', icon:'🍦', price:5, eatSeconds:4, fx:'freeze', enabled:true, gifSec:4, extraSec:3, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'stop', afterFx:'ice', afterImg:''},
+  {id:'mushroom',name:'Mushroom',icon:'🍄', price:5, eatSeconds:5, fx:'poison', enabled:true, gifSec:5, extraSec:3, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'slow', afterFx:'poison', afterImg:''},
+  {id:'chili',   name:'Chili',   icon:'🌶️', price:5, eatSeconds:4, fx:'burn', enabled:true, gifSec:4, extraSec:3, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'fast', afterFx:'fire', afterImg:''},
+  {id:'noodles', name:'Noodles', icon:'🍜', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:0, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'normal', afterFx:'none', afterImg:''},
+  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:3, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'slow', afterFx:'hearts', afterImg:''},
 ];
 // Donut-gif settings (remembered).
 const GIF_SET = {
@@ -585,14 +595,14 @@ const GIF_SET = {
     const saved=JSON.parse(localStorage.getItem('timer_dishes')||'[]');
     for(const s of saved){
       const f=FOOD_ITEMS.find(x=>x.id===s.id); if(!f) continue;
-      Object.assign(f, {gifSec:s.gifSec??f.gifSec, extraSec:s.extraSec??f.extraSec, gifUrl:s.gifUrl||'', gifFlip:!!s.gifFlip, gifRmwhite:s.gifRmwhite!==false});
+      Object.assign(f, {gifSec:s.gifSec??f.gifSec, extraSec:s.extraSec??f.extraSec, gifUrl:s.gifUrl||'', gifFlip:!!s.gifFlip, gifRmwhite:s.gifRmwhite!==false, after:s.after||f.after, afterFx:s.afterFx||f.afterFx, afterImg:s.afterImg||''});
     }
     const custom=JSON.parse(localStorage.getItem('timer_custom_dishes')||'[]');
     for(const c of custom){ if(!FOOD_ITEMS.some(x=>x.id===c.id)) FOOD_ITEMS.push(c); }
   }catch(e){}
 })();
 function saveDishes(){
-  localStorage.setItem('timer_dishes', JSON.stringify(FOOD_ITEMS.map(f=>({id:f.id,gifSec:f.gifSec,extraSec:f.extraSec,gifUrl:f.gifUrl||'',gifFlip:!!f.gifFlip,gifRmwhite:f.gifRmwhite!==false}))));
+  localStorage.setItem('timer_dishes', JSON.stringify(FOOD_ITEMS.map(f=>({id:f.id,gifSec:f.gifSec,extraSec:f.extraSec,gifUrl:f.gifUrl||'',gifFlip:!!f.gifFlip,gifRmwhite:f.gifRmwhite!==false,after:f.after,afterFx:f.afterFx,afterImg:f.afterImg||''}))));
   localStorage.setItem('timer_custom_dishes', JSON.stringify(FOOD_ITEMS.filter(f=>f.custom)));
 }
 function dishGifSrc(f){ return f.gifUrl || EAT_IMAGE; }
@@ -634,29 +644,35 @@ function hideEatFrame(){
   $('eat-frame').classList.add('hidden');
   $('boss-img').style.visibility='visible';
 }
-// Per-dish cards: gif link + rmwhite + flip + preview + plain-language timing (remembered).
+// Per-dish cards: gif link + rmwhite + flip + preview + after-eat state (remembered).
+const AFTER_OPTS = [['normal','Walks on normally'],['stop','Stands still (trapped)'],['slow','Walks slow'],['fast','Runs fast']];
+const AFTERFX_OPTS = [['none','No extra look'],['ice','🧊 Ice block (cracks open at end)'],['poison','☠️ Poison skulls + smoke'],['fire','🔥 Burns'],['hearts','💕 Hearts']];
 function renderDishTiming(){
   const box=$('dish-timing'); if(!box) return; box.innerHTML='';
   for(const f of FOOD_ITEMS){
     const card=document.createElement('div'); card.className='dish-card';
     const prev=f.gifUrl?'<img class="dish-preview" src="'+f.gifUrl+'">':'<span class="dish-preview" style="font-size:36px;text-align:center;line-height:64px">'+f.icon+'</span>';
+    const afterSel=AFTER_OPTS.map(o=>'<option value="'+o[0]+'"'+(f.after===o[0]?' selected':'')+'>'+o[1]+'</option>').join('');
+    const fxSel=AFTERFX_OPTS.map(o=>'<option value="'+o[0]+'"'+(f.afterFx===o[0]?' selected':'')+'>'+o[1]+'</option>').join('');
     card.innerHTML='<div class="dish-head">'+prev+'<span>'+f.icon+' '+f.name+'</span></div>'
       +'<div class="dish-grid">'
       +'<label>Eat gif link for '+f.name+'<input type="text" data-dish="'+f.id+'" data-k="gifUrl" value="'+(f.gifUrl||'')+'" placeholder="https://... (empty = default)"></label>'
       +'<label>Show gif <input type="number" data-dish="'+f.id+'" data-k="gifSec" value="'+f.gifSec+'" min="1" max="15" style="width:60px"> sec <span style="color:#888">(Boss hides, gif shows)</span></label>'
-      +'<label>Extra colour FX <input type="number" data-dish="'+f.id+'" data-k="extraSec" value="'+f.extraSec+'" min="0" max="15" style="width:60px"> sec <span style="color:#888">(Boss keeps colour + walks slow after gif)</span></label>'
+      +'<label>After gif, Boss <select data-dish="'+f.id+'" data-k="after">'+afterSel+'</select></label>'
+      +'<label>Extra look <select data-dish="'+f.id+'" data-k="afterFx">'+fxSel+'</select> for <input type="number" data-dish="'+f.id+'" data-k="extraSec" value="'+f.extraSec+'" min="0" max="15" style="width:55px"> sec</label>'
+      +'<label>Pretty image link for the extra look (empty = emoji)<input type="text" data-dish="'+f.id+'" data-k="afterImg" value="'+(f.afterImg||'')+'" placeholder="https://... ice block / skull / fire"></label>'
       +'<div class="row" style="justify-content:flex-start"><label><input type="checkbox" data-dish="'+f.id+'" data-k="gifRmwhite" '+(f.gifRmwhite!==false?'checked':'')+'> Remove white</label>'
       +'<label><input type="checkbox" data-dish="'+f.id+'" data-k="gifFlip" '+(f.gifFlip?'checked':'')+'> Flip</label>'
-      +'<button class="btn-add" data-preview="'+f.id+'">Preview</button></div>'
+      +'<button class="btn-add" data-preview="'+f.id+'">Preview gif</button></div>'
       +'</div>';
     box.appendChild(card);
   }
-  box.querySelectorAll('input').forEach(inp=>{
+  box.querySelectorAll('input,select').forEach(inp=>{
     inp.onchange=()=>{
       const f=FOOD_ITEMS.find(x=>x.id===inp.dataset.dish); if(!f) return;
       const k=inp.dataset.k;
       if(inp.type==='checkbox') f[k]=inp.checked;
-      else if(k==='gifUrl') f.gifUrl=inp.value.trim();
+      else if(k==='gifUrl'||k==='afterImg'||k==='after'||k==='afterFx') f[k]=inp.value.trim();
       else if(k==='gifSec') f.gifSec=Math.max(1,parseInt(inp.value)||f.gifSec);
       else if(k==='extraSec') f.extraSec=Math.max(0,parseInt(inp.value)||0);
       saveDishes(); renderDishTiming();
@@ -799,7 +815,7 @@ function updateGame(now){
   if(!isRunning) return;
   const dt=now-lastFrameTime; lastFrameTime=now;
   remainingTimeMs-=dt;
-  // Boss walks with time; frozen = 0 speed, slow = half speed, grow buff = double speed.
+  // Boss walks with time; frozen/stop = 0 speed, slow = half speed, fast/grow buff = double speed.
   let speed=1;
   if(now<bossFrozenUntil) speed=0; else if(now<bossSlowUntil) speed=0.5;
   if(now<bossFastUntil && speed>0) speed=2;
@@ -1215,15 +1231,63 @@ function throwFood(f, free){
     updateMeters(); renderShop();
     setTimeout(()=>{
       hideEatFrame(); stopMunchLoop(); sfxGulp();
-      // STAGE 2: Boss back but keeps colour tint + walks slow for extraSec
-      const t2=performance.now();
-      if(f.fx==='burn'){ bossBox.classList.add('burning'); showFireAura(bossBox, extraSec*1000||3000); bossSlowUntil=t2+(extraSec*1000||3000); }
-      else if(f.fx==='freeze'){ bossBox.classList.add('tint-blue'); if(extraSec>0){ showSnow(extraSec*1000); bossSlowUntil=t2+extraSec*1000; } }
-      else if(f.fx==='poison'){ bossBox.classList.add('tint-green'); bossSlowUntil=t2+((extraSec||3)*1000); showPoisonCloud(bossBox, (extraSec||3)*1000); }
+      // STAGE 2: Boss back in its after-state for extraSec (per-dish setting).
+      // after: normal | stop (trapped) | slow | fast — afterFx: none | ice | poison | fire | hearts
+      const t2=performance.now(), dur=(extraSec>0?extraSec:2.5)*1000;
+      applyAfterState(f, t2);
       bossGrow();
-      setTimeout(()=>{ bossBox.classList.remove('burning','tint-blue','tint-green'); bossEating=false; serveNextInQueue(); }, Math.max(extraSec*1000, 2500));
+      setTimeout(()=>{ clearAfterState(f); bossEating=false; serveNextInQueue(); }, Math.max(extraSec*1000, 2500));
     }, gifSec*1000);
   }, 1250); // flight 1200ms + margin
+}
+// ---- after-eat states (stage 2) ----
+function applyAfterState(f, t2){
+  const bossBox=$('boss'), ms=(f.extraSec>0?f.extraSec:2.5)*1000;
+  const after=f.after||'normal', fx=f.afterFx||'none';
+  if(after==='stop'){ bossFrozenUntil=t2+ms; }
+  else if(after==='slow'){ bossSlowUntil=t2+ms; }
+  else if(after==='fast'){ bossFastUntil=Math.max(bossFastUntil, t2+Math.min(ms, 10000)); }
+  if(fx==='ice'){ showIceBlock(bossBox, f, ms); bossFrozenUntil=t2+ms; }
+  else if(fx==='poison'){ bossBox.classList.add('tint-green'); showPoisonCloud(bossBox, ms); floatAfter(bossBox, f.afterImg||'💀', ms); if(after==='normal') bossSlowUntil=t2+ms; }
+  else if(fx==='fire'){ bossBox.classList.add('burning'); showFireAura(bossBox, ms); if(after==='normal') bossSlowUntil=t2+ms; }
+  else if(fx==='hearts'){ floatAfter(bossBox, f.afterImg||'💕', ms); if(after==='normal') bossSlowUntil=t2+ms; }
+  else if(f.afterImg){ floatAfter(bossBox, '<img src="'+f.afterImg+'" style="width:90px;height:90px;object-fit:contain">', ms); }
+}
+function clearAfterState(f){
+  const bossBox=$('boss');
+  bossBox.classList.remove('burning','tint-blue','tint-green');
+  const ib=$('ice-block'); if(ib){ ib.classList.add('crack'); setTimeout(()=>{ ib.classList.add('hidden'); ib.classList.remove('crack'); }, 500); }
+  document.querySelectorAll('.after-float').forEach(e=>e.remove());
+}
+// Ice block: covers Boss, cracks open at the end.
+function showIceBlock(bossBox, f, ms){
+  const arena=$('arena'), ib=$('ice-block'); if(!arena||!ib||!bossBox) return;
+  const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect();
+  const imgHtml=f.afterImg?'<img src="'+f.afterImg+'" style="width:80%;height:80%;object-fit:contain">':'<span style="font-size:64px">🧊</span>';
+  ib.innerHTML=imgHtml;
+  ib.style.width=(br.width*1.25)+'px'; ib.style.height=(br.height*1.25)+'px';
+  ib.style.left=((br.left-ar.left)+br.width/2-br.width*1.25/2)+'px';
+  ib.style.top=((br.top-ar.top)+br.height-br.height*1.25)+'px';
+  ib.classList.remove('hidden','crack');
+  showSnow(ms);
+  setTimeout(()=>{ ib.classList.add('crack'); }, Math.max(ms-500, 100));
+}
+// Floating emoji/image above Boss during the after-state.
+function floatAfter(bossBox, html, ms){
+  const arena=$('arena'); if(!arena||!bossBox) return;
+  const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect();
+  const n=Math.max(3, Math.min(8, Math.round(ms/1000)));
+  for(let i=0;i<n;i++){
+    setTimeout(()=>{
+      const s=document.createElement('div');
+      s.className='after-float';
+      s.innerHTML=(typeof html==='string'&&html.indexOf('<')===0)?html:('<span style="font-size:44px">'+html+'</span>');
+      s.style.left=((br.left-ar.left)+Math.random()*br.width)+'px';
+      s.style.top=((br.top-ar.top)-10)+'px';
+      arena.appendChild(s);
+      setTimeout(()=>s.remove(), 1500);
+    }, i*(ms/n));
+  }
 }
 // Combo 5 = FIXED Donut ICON (250%) flying to Boss, then Donut GIF in round frame, plain eating only, no fx.
 // Gif flip + rmwhite from settings (remembered). Boss hides while gif shows.
