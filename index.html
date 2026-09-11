@@ -233,17 +233,21 @@
   .food-card{background:transparent; border:none}
   .skill-orb .sname,.food-card .sname{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .skill-orb .mcost,.food-card .mcost{font-size:20px; font-weight:bold; color:var(--gold); flex-shrink:0; text-shadow:1px 1px 0 #000}
-  .skill-orb .atom,.food-card .atom{position:relative; width:52px; height:52px; flex-shrink:0}
+  .skill-orb .atom,.food-card .atom{position:relative; width:58px; height:58px; flex-shrink:0}
   .skill-orb .atom img,.food-card .atom img{object-fit:contain; position:absolute; z-index:2}
   .skill-orb .atom .ficon,.food-card .atom .ficon{position:absolute; left:0; right:0; top:4px; text-align:center; z-index:2}
-  .atom .ring{position:absolute; border-radius:50%; animation:spin 3s linear infinite}
-  .atom .ring.r1{inset:0; border:2px solid rgba(123,97,255,.9)}
-  .atom .ring.r2{inset:7px; border:2px solid rgba(0,229,255,.9); animation-duration:2s; animation-direction:reverse}
-  .atom .ring.r3{inset:14px; border:2px solid rgba(255,223,94,.9); animation-duration:1.4s}
-  .atom .ring::after{content:''; position:absolute; width:8px; height:8px; border-radius:50%; top:-5px; left:50%}
-  .atom .ring.r1::after{background:#00e5ff}
-  .atom .ring.r2::after{background:#ffdf5e}
-  .atom .ring.r3::after{background:#ff6b9d}
+  /* True atom: 3 tilted elliptical orbits (like chemistry textbook), electrons ride each orbit */
+  .atom .ring{position:absolute; border-radius:50%;}
+  .atom .ring.r1{inset:0; border:2px solid rgba(123,97,255,.9); transform:rotate(0deg) scaleY(.55); animation:orb1 3s linear infinite}
+  .atom .ring.r2{inset:0; border:2px solid rgba(0,229,255,.9); transform:rotate(60deg) scaleY(.55); animation:orb2 2.2s linear infinite}
+  .atom .ring.r3{inset:0; border:2px solid rgba(255,223,94,.9); transform:rotate(120deg) scaleY(.55); animation:orb3 1.6s linear infinite}
+  @keyframes orb1{from{transform:rotate(0deg) scaleY(.55)} to{transform:rotate(360deg) scaleY(.55)}}
+  @keyframes orb2{from{transform:rotate(60deg) scaleY(.55)} to{transform:rotate(420deg) scaleY(.55)}}
+  @keyframes orb3{from{transform:rotate(120deg) scaleY(.55)} to{transform:rotate(480deg) scaleY(.55)}}
+  .atom .ring::after{content:''; position:absolute; width:9px; height:9px; border-radius:50%; top:-6px; left:50%; box-shadow:0 0 6px currentColor}
+  .atom .ring.r1::after{background:#00e5ff; color:#00e5ff}
+  .atom .ring.r2::after{background:#ffdf5e; color:#ffdf5e}
+  .atom .ring.r3::after{background:#ff6b9d; color:#ff6b9d}
   @keyframes spin{to{transform:rotate(360deg)}}
   .skill-orb.ready{box-shadow:0 0 12px rgba(123,97,255,.9); background:#241b5e}
   .skill-orb.locked{opacity:.55}
@@ -253,7 +257,11 @@
   .boss-grow::before{content:''; position:absolute; left:50%; top:50%; width:120%; height:120%; transform:translate(-50%,-50%); border:3px solid #ffd43b; border-radius:50%; animation:ringOut 1s ease-out infinite}
   .boss-grow::after{content:''; position:absolute; left:50%; top:50%; width:140%; height:140%; transform:translate(-50%,-50%); border:2px dashed #ff922b; border-radius:50%; animation:spin 2s linear infinite}
   @keyframes ringOut{from{opacity:1; transform:translate(-50%,-50%) scale(.7)} to{opacity:0; transform:translate(-50%,-50%) scale(1.2)}}
-  #projectile img{width:64px; height:64px; object-fit:contain}
+  #projectile img{width:120px; height:120px; object-fit:contain}
+  #projectile .fly-icon{display:inline-block; font-size:120px; line-height:1}
+  #projectile .no-white{mix-blend-mode:multiply; border-radius:50%}
+  .trail-bit{position:absolute; z-index:5; pointer-events:none; animation:trailFade .8s ease-out forwards}
+  @keyframes trailFade{from{opacity:1; transform:translateY(0) scale(1)} to{opacity:0; transform:translateY(-40px) scale(.5)}}
 
   /* ---------- END SCREEN ---------- */
   #end-screen{
@@ -433,13 +441,19 @@ const HERO_CHOICES = [
   {name:'Hero 3', src:'assets/hero/player3.gif'},
   {name:'Hero 4', src:'assets/hero/player4.gif'},
 ];
-let selBoss = BOSS_CHOICES[0].src, selHero = HERO_CHOICES[0].src;
-let flipBoss = true, flipHero = false;
-let bossSize = 130, heroSize = 130;
+let selBoss = localStorage.getItem('timer_selBoss') || BOSS_CHOICES[0].src;
+let selHero = localStorage.getItem('timer_selHero') || HERO_CHOICES[0].src;
+let flipBoss = localStorage.getItem('timer_flipBoss')!=='0', flipHero = localStorage.getItem('timer_flipHero')==='1';
+let bossSize = parseInt(localStorage.getItem('timer_bossSize'))||130, heroSize = parseInt(localStorage.getItem('timer_heroSize'))||130;
+function rememberSetup(){
+  localStorage.setItem('timer_selBoss', selBoss); localStorage.setItem('timer_selHero', selHero);
+  localStorage.setItem('timer_flipBoss', flipBoss?'1':'0'); localStorage.setItem('timer_flipHero', flipHero?'1':'0');
+  localStorage.setItem('timer_bossSize', bossSize); localStorage.setItem('timer_heroSize', heroSize);
+}
 function setSize(who){
   if(who==='boss'){ bossSize=parseInt($('boss-size').value)||130; $('boss-size-val').textContent=bossSize+'%'; }
   else { heroSize=parseInt($('hero-size').value)||130; $('hero-size-val').textContent=heroSize+'%'; }
-  applySizes();
+  rememberSetup(); applySizes();
 }
 function applySizes(){
   const b=$('boss-img'), h=$('hero-img');
@@ -910,22 +924,40 @@ function applyFood(id){
   updateMeters(); renderShop();
   throwFood(f);
 }
-// Food flies Hero -> Boss in an ARC, Boss swaps to eating gif (EAT_IMAGE), sits, then grows.
+// Food flies Hero -> Boss in an ARC at HALF speed (1200ms so icon is visible),
+// with matching trail fx: ice=snowflakes+blue aura | chili=fire+smoke | poison=green bubbles | plain=aura.
+// Boss swaps to eating gif (EAT_IMAGE), sits, then grows.
 // fx per dish: eat = sits & eats | burn (Chili 🌶️) = spicy red + slow | freeze (Ice Cream 🍦) = icy blue + snow | poison (Mushroom 🍄) = green + slow
+const TRAIL_FX = {
+  freeze:['❄️','❄','✻','🧊'], burn:['🔥','💥','🌋','✦'], poison:['🟢','☠️','💚','🫧'],
+  eat:['✨','💫','⭐','🌟']
+};
+function spawnTrail(x, y, fx){
+  const arena=$('arena'); if(!arena) return;
+  const bits=TRAIL_FX[fx]||TRAIL_FX.eat;
+  const s=document.createElement('span');
+  s.className='trail-bit'; s.textContent=bits[Math.floor(Math.random()*bits.length)];
+  s.style.left=x+'px'; s.style.top=(y+Math.random()*30-15)+'px';
+  s.style.fontSize=(20+Math.random()*26)+'px';
+  arena.appendChild(s);
+  setTimeout(()=>s.remove(), 850);
+}
 function throwFood(f, free){
   foodsEaten++;
   const g=castGeom(), proj=$('projectile');
-  proj.className=''; proj.innerHTML='<span style="font-size:48px">'+f.icon+'</span>';
+  proj.className=''; proj.innerHTML='<span class="fly-icon">'+f.icon+'</span>';
   proj.style.position='absolute'; proj.style.top=g.top+'px';
   proj.classList.remove('hidden'); proj.style.transition='none'; proj.style.left=g.heroX+'px';
-  // arc flight: quadratic curve Hero -> Boss, peak lifted 130px
+  // arc flight at HALF speed: 1200ms, quadratic curve Hero -> Boss, peak lifted 130px
   const x0=g.heroX, x1=g.bossX, y0=g.top, yPeak=g.top-130;
-  const t0=performance.now(), DUR=600;
+  const t0=performance.now(), DUR=1200;
+  const arenaBox=$('arena').getBoundingClientRect();
   function stepArc(now){
     const t=Math.min(1,(now-t0)/DUR);
     const x=x0+(x1-x0)*t;
     const y=(1-t)*(1-t)*y0+2*(1-t)*t*yPeak+t*t*(y0+10);
     proj.style.left=x+'px'; proj.style.top=y+'px';
+    spawnTrail(x, y, f.fx);
     if(t<1 && !proj.classList.contains('hidden')) requestAnimationFrame(stepArc);
   }
   requestAnimationFrame(stepArc);
@@ -951,11 +983,35 @@ function throwFood(f, free){
     }, f.eatSeconds*1000);
   }, 570);
 }
-// Combo 5 = free random enabled dish (no mana cost)
+// Combo 5 = FIXED Donut gif flying to Boss, plain eating only, no fx.
+// White background removed via multiply blend.
+const DONUT_IMAGE = 'assets/combo/donut.gif';
 function throwRandomFood(){
-  const pool=FOOD_ITEMS.filter(f=>f.enabled!==false);
-  if(!pool.length) return;
-  throwFood(pool[Math.floor(Math.random()*pool.length)], true);
+  const proj=$('projectile');
+  const g=castGeom();
+  proj.className=''; proj.innerHTML='<img class="no-white" src="'+DONUT_IMAGE+'" alt="donut">';
+  proj.style.position='absolute'; proj.style.top=g.top+'px';
+  proj.classList.remove('hidden'); proj.style.transition='none'; proj.style.left=g.heroX+'px';
+  const x0=g.heroX, x1=g.bossX, y0=g.top, yPeak=g.top-130;
+  const t0=performance.now(), DUR=1200;
+  function stepArc(now){
+    const t=Math.min(1,(now-t0)/DUR);
+    const x=x0+(x1-x0)*t;
+    const y=(1-t)*(1-t)*y0+2*(1-t)*t*yPeak+t*t*(y0+10);
+    proj.style.left=x+'px'; proj.style.top=y+'px';
+    if(t<1 && !proj.classList.contains('hidden')) requestAnimationFrame(stepArc);
+  }
+  requestAnimationFrame(stepArc);
+  setTimeout(()=>{
+    proj.classList.add('hidden'); proj.style.transition='';
+    const keepSrc=$('boss-url').value.trim()||selBoss||'assets/boss/boss1.gif';
+    const bossImg=$('boss-img'), badge=$('status-badge');
+    bossImg.src=EAT_IMAGE;
+    bossFrozenUntil=performance.now()+3000;
+    badge.innerHTML='🍩 Donut!<small id="status-time"></small>';
+    badge.classList.remove('hidden');
+    setTimeout(()=>{ bossImg.src=keepSrc; bossGrow(); }, 3000);
+  }, 1250);
 }
 
 /* ================= MUSIC (repo mp3 remembered, upload also works) ================= */
@@ -1012,7 +1068,7 @@ function renderGallery(){
     const d=document.createElement('div');
     d.className='pick'+(selBoss===c.src?' sel':'');
     d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>';
-    d.onclick=()=>{ selBoss=c.src; $('boss-url').value=''; renderGallery(); };
+    d.onclick=()=>{ selBoss=c.src; $('boss-url').value=''; rememberSetup(); renderGallery(); };
     bg.appendChild(d);
   });
   const hg=$('hero-gallery'); hg.innerHTML='';
@@ -1020,7 +1076,7 @@ function renderGallery(){
     const d=document.createElement('div');
     d.className='pick'+(selHero===c.src?' sel':'');
     d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>';
-    d.onclick=()=>{ selHero=c.src; $('hero-url').value=''; renderGallery(); };
+    d.onclick=()=>{ selHero=c.src; $('hero-url').value=''; rememberSetup(); renderGallery(); };
     hg.appendChild(d);
   });
 // First paint (no combo gallery: flames are fixed power_up.gif)
@@ -1034,7 +1090,17 @@ function addPastedLinks(){
 function toggleFlip(who){
   if(who==='boss'){ flipBoss=!flipBoss; $('boss-flip-state').textContent='State: '+(flipBoss?'on (faces right)':'off (faces left)'); $('boss').classList.toggle('mirrored', flipBoss); }
   else { flipHero=!flipHero; $('hero-flip-state').textContent='State: '+(flipHero?'on':'off'); $('hero').classList.toggle('mirrored', flipHero); }
+  rememberSetup();
 }
+// First paint: restore remembered choices into the setup controls.
+(function restoreSetup(){
+  if($('boss-size')){ $('boss-size').value=bossSize; $('boss-size-val').textContent=bossSize+'%'; }
+  if($('hero-size')){ $('hero-size').value=heroSize; $('hero-size-val').textContent=heroSize+'%'; }
+  if($('boss-flip-state')) $('boss-flip-state').textContent='State: '+(flipBoss?'on (faces right)':'off (faces left)');
+  if($('hero-flip-state')) $('hero-flip-state').textContent='State: '+(flipHero?'on':'off');
+  if($('boss')) $('boss').classList.toggle('mirrored', flipBoss);
+  if($('hero')) $('hero').classList.toggle('mirrored', flipHero);
+})();
 const COMBO_FLAMES = ['assets/power_up.gif','assets/power_up.gif','assets/power_up.gif','assets/power_up.gif','assets/power_up.gif'];
 // Combo-5 is handled by castRandomSkill() (free hero skill). No burger throw.
 renderGallery(); renderShop(); renderSkillPick(); applySizes();
