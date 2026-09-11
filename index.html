@@ -77,12 +77,34 @@
     animation:comboPop 2.5s ease-out forwards;
   }
   @keyframes comboPop{0%{opacity:0; transform:translateX(-50%) scale(.5)}15%{opacity:1; transform:translateX(-50%) scale(1.1)}30%{transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0; transform:translateX(-50%) translateY(-30px) scale(1)}}
-  /* Dish card in settings: one card per food */
-  .dish-card{background:#fdfbf8; border:2px solid #e5ddd2; border-radius:14px; padding:12px; margin:10px 0}
-  .dish-card .dish-head{display:flex; gap:10px; align-items:center; font-size:16px; font-weight:bold; color:#5c4a3a}
-  .dish-card .dish-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px}
-  .dish-card input[type=text]{width:100%}
-  .dish-preview{width:64px; height:64px; object-fit:contain; border-radius:12px; background:#fff; border:2px solid #e5ddd2}
+  /* Dish manager table (Yugioh-tag style): one row per food, scrolls sideways on small screens */
+  #screen-setup{max-height:calc(100vh - 90px); overflow-y:auto; padding-bottom:28px; font-size:16px}
+  #screen-setup::-webkit-scrollbar{width:10px; background:#e5ddd2}
+  #screen-setup::-webkit-scrollbar-thumb{background:#5c4a3a; border-radius:5px}
+  .table-wrap{overflow-x:auto; margin:10px 0; border-radius:14px; box-shadow:0 2px 8px rgba(92,74,58,.12)}
+  .table-wrap::-webkit-scrollbar{height:10px; background:#e5ddd2}
+  .table-wrap::-webkit-scrollbar-thumb{background:#5c4a3a; border-radius:5px}
+  #dish-table{border-collapse:collapse; width:100%; min-width:980px; background:#fff; font-size:15px}
+  #dish-table th{background:#5c4a3a; color:#fff; padding:12px 10px; font-size:15px; white-space:nowrap; position:sticky; top:0}
+  #dish-table th:first-child{border-radius:14px 0 0 0}
+  #dish-table th:last-child{border-radius:0 14px 0 0}
+  #dish-table td{padding:10px; border-bottom:2px solid #f0e9df; vertical-align:middle; text-align:center; color:#3e342c}
+  #dish-table tr:last-child td{border-bottom:none}
+  #dish-table input[type=text]{width:160px; padding:8px 10px; font-size:15px; border:2px solid #e5ddd2; border-radius:10px; background:#fdfbf8}
+  #dish-table input[type=number]{width:60px; padding:8px 6px; font-size:15px; border:2px solid #e5ddd2; border-radius:10px; background:#fdfbf8; text-align:center}
+  #dish-table select{padding:8px; font-size:15px; border:2px solid #e5ddd2; border-radius:10px; background:#fdfbf8; max-width:170px}
+  #dish-table input[type=checkbox]{width:24px; height:24px; accent-color:#5c4a3a; cursor:pointer}
+  #dish-table .dish-preview{width:56px; height:56px; object-fit:contain; border-radius:12px; background:#fdfbf8; border:2px solid #e5ddd2}
+  #dish-table .btn-add{padding:8px 14px; font-size:14px}
+  /* Settings font bump: everything readable */
+  .panel h2{font-size:24px}
+  fieldset legend{font-size:16px}
+  fieldset label{font-size:16px !important}
+  fieldset input[type=text], fieldset input[type=number], fieldset select{font-size:16px !important}
+  .setup-tabs button{padding:12px 20px; font-size:16px}
+  .flip-row, .size-row{font-size:15px}
+  .flip-row button{padding:8px 16px; font-size:15px}
+  #btn-start{font-size:20px}
   .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center}
   .time-inputs{display:flex; gap:15px; justify-content:center; margin-bottom:12px}
   .time-inputs div{display:flex; flex-direction:column; align-items:center}
@@ -351,7 +373,7 @@
     <button id="spb-time" class="active" onclick="showPane('time')">⏱ Time</button>
     <button id="spb-boss" onclick="showPane('boss')">👹 Boss</button>
     <button id="spb-hero" onclick="showPane('hero')">🦸 Hero</button>
-    <button id="spb-skill" onclick="showPane('skill')">✨ Skills + Food</button>
+    <button id="spb-food" onclick="showPane('food')">🍔 Food</button>
     <button id="spb-bg" onclick="showPane('bg')">🌳 BG + Music</button>
     <button id="spb-keys" onclick="showPane('keys')">⌨ Keys</button>
   </div>
@@ -390,22 +412,29 @@
     <div class="size-row">Hero size: <input type="range" id="hero-size" min="50" max="300" value="130" oninput="setSize('hero')"><span id="hero-size-val">130%</span></div>
   </fieldset>
   </div>
-  <div class="setup-pane hidden" id="sp-skill">
+  <div class="setup-pane hidden" id="sp-food">
   <fieldset>
-    <legend>Food — throw at Boss, Boss turns into eating image</legend>
+    <legend>🍔 Food — tick on top to use in game</legend>
     <div class="row"><button class="btn-add" onclick="toggleAllSkills('food',true)">Select all</button><button class="btn-clear" onclick="toggleAllSkills('food',false)">Clear all</button><button class="btn-add" onclick="addDish()">+ Add dish</button></div>
     <div id="food-pick" style="margin-top:10px"></div>
+  </fieldset>
+  <fieldset>
+    <legend>🍽️ Dish manager — one row per food (all remembered)</legend>
+    <div style="font-size:15px;color:#5c4a3a;margin-bottom:6px">Gif sec = seconds the eating gif shows (Boss hides). Extra = seconds after the gif: Boss returns in its after-state below.</div>
+    <div class="table-wrap"><table id="dish-table">
+      <thead><tr>
+        <th>Use</th><th>Dish</th><th>Eat gif link</th><th>Gif<br>sec</th>
+        <th>After gif,<br>Boss…</th><th>Extra<br>look</th><th>Extra<br>sec</th>
+        <th>Pretty image<br>(extra look)</th><th>Remove<br>white</th><th>Flip</th><th></th>
+      </tr></thead>
+      <tbody id="dish-timing"></tbody>
+    </table></div>
   </fieldset>
   <fieldset>
     <legend>Boss perk — after eating grows + runs fast</legend>
     <label>Grow per eat (%): <input type="number" id="boss-grow-pct" value="10" min="0" max="100" style="width:70px"></label>
     <label>Speed-up (sec): <input type="number" id="boss-grow-sec" value="5" min="1" max="30" style="width:70px"></label>
     <label>Max Boss cap (% of arena height): <input type="number" id="boss-max-pct" value="70" min="30" max="90" style="width:70px"></label>
-  </fieldset>
-  <fieldset>
-    <legend>Each dish — its own eating gif + timing (all remembered)</legend>
-    <div style="font-size:13px;color:#5c4a3a;margin-bottom:6px">Show gif = seconds the eating gif shows (Boss hides). Extra FX = seconds the Boss keeps the colour + walks slow after the gif ends.</div>
-    <div id="dish-timing"></div>
   </fieldset>
   <fieldset>
     <legend>Combo Donut gif (remembered)</legend>
@@ -565,7 +594,7 @@ const HERO_SKILLS = [];
 // 6 food dishes: thrown to Boss, Boss sits and eats (swap to eat.gif), then grows.
 const EAT_IMAGE = 'assets/combo/eat.gif';
 function showPane(name){
-  ['time','boss','hero','skill','bg','keys'].forEach(p=>{
+  ['time','boss','hero','food','bg','keys'].forEach(p=>{
     $('sp-'+p).classList.toggle('hidden', p!==name);
     $('spb-'+p).classList.toggle('active', p===name);
   });
@@ -644,34 +673,35 @@ function hideEatFrame(){
   $('eat-frame').classList.add('hidden');
   $('boss-img').style.visibility='visible';
 }
-// Per-dish cards: gif link + rmwhite + flip + preview + after-eat state (remembered).
-const AFTER_OPTS = [['normal','Walks on normally'],['stop','Stands still (trapped)'],['slow','Walks slow'],['fast','Runs fast']];
-const AFTERFX_OPTS = [['none','No extra look'],['ice','🧊 Ice block (cracks open at end)'],['poison','☠️ Poison skulls + smoke'],['fire','🔥 Burns'],['hearts','💕 Hearts']];
+// Dish manager: one table row per food (Yugioh-tag style). All changes auto-save.
 function renderDishTiming(){
   const box=$('dish-timing'); if(!box) return; box.innerHTML='';
   for(const f of FOOD_ITEMS){
-    const card=document.createElement('div'); card.className='dish-card';
-    const prev=f.gifUrl?'<img class="dish-preview" src="'+f.gifUrl+'">':'<span class="dish-preview" style="font-size:36px;text-align:center;line-height:64px">'+f.icon+'</span>';
+    const tr=document.createElement('tr');
+    const prev=f.gifUrl?'<img class="dish-preview" src="'+f.gifUrl+'">':'<span class="dish-preview" style="font-size:32px;text-align:center;line-height:56px;display:inline-block">'+f.icon+'</span>';
     const afterSel=AFTER_OPTS.map(o=>'<option value="'+o[0]+'"'+(f.after===o[0]?' selected':'')+'>'+o[1]+'</option>').join('');
     const fxSel=AFTERFX_OPTS.map(o=>'<option value="'+o[0]+'"'+(f.afterFx===o[0]?' selected':'')+'>'+o[1]+'</option>').join('');
-    card.innerHTML='<div class="dish-head">'+prev+'<span>'+f.icon+' '+f.name+'</span></div>'
-      +'<div class="dish-grid">'
-      +'<label>Eat gif link for '+f.name+'<input type="text" data-dish="'+f.id+'" data-k="gifUrl" value="'+(f.gifUrl||'')+'" placeholder="https://... (empty = default)"></label>'
-      +'<label>Show gif <input type="number" data-dish="'+f.id+'" data-k="gifSec" value="'+f.gifSec+'" min="1" max="15" style="width:60px"> sec <span style="color:#888">(Boss hides, gif shows)</span></label>'
-      +'<label>After gif, Boss <select data-dish="'+f.id+'" data-k="after">'+afterSel+'</select></label>'
-      +'<label>Extra look <select data-dish="'+f.id+'" data-k="afterFx">'+fxSel+'</select> for <input type="number" data-dish="'+f.id+'" data-k="extraSec" value="'+f.extraSec+'" min="0" max="15" style="width:55px"> sec</label>'
-      +'<label>Pretty image link for the extra look (empty = emoji)<input type="text" data-dish="'+f.id+'" data-k="afterImg" value="'+(f.afterImg||'')+'" placeholder="https://... ice block / skull / fire"></label>'
-      +'<div class="row" style="justify-content:flex-start"><label><input type="checkbox" data-dish="'+f.id+'" data-k="gifRmwhite" '+(f.gifRmwhite!==false?'checked':'')+'> Remove white</label>'
-      +'<label><input type="checkbox" data-dish="'+f.id+'" data-k="gifFlip" '+(f.gifFlip?'checked':'')+'> Flip</label>'
-      +'<button class="btn-add" data-preview="'+f.id+'">Preview gif</button></div>'
-      +'</div>';
-    box.appendChild(card);
+    tr.innerHTML='<td><input type="checkbox" data-dish="'+f.id+'" data-k="enabled" '+((f.enabled!==false)?'checked':'')+' title="Use in game"></td>'
+      +'<td><b>'+f.icon+' '+f.name+'</b><br>'+prev+'</td>'
+      +'<td><input type="text" data-dish="'+f.id+'" data-k="gifUrl" value="'+(f.gifUrl||'')+'" placeholder="https://... (empty = default)"></td>'
+      +'<td><input type="number" data-dish="'+f.id+'" data-k="gifSec" value="'+f.gifSec+'" min="1" max="15"></td>'
+      +'<td><select data-dish="'+f.id+'" data-k="after">'+afterSel+'</select></td>'
+      +'<td><select data-dish="'+f.id+'" data-k="afterFx">'+fxSel+'</select></td>'
+      +'<td><input type="number" data-dish="'+f.id+'" data-k="extraSec" value="'+f.extraSec+'" min="0" max="15"></td>'
+      +'<td><input type="text" data-dish="'+f.id+'" data-k="afterImg" value="'+(f.afterImg||'')+'" placeholder="https://... ice / skull / fire"></td>'
+      +'<td><input type="checkbox" data-dish="'+f.id+'" data-k="gifRmwhite" '+(f.gifRmwhite!==false?'checked':'')+'></td>'
+      +'<td><input type="checkbox" data-dish="'+f.id+'" data-k="gifFlip" '+(f.gifFlip?'checked':'')+'></td>'
+      +'<td><button class="btn-add" data-preview="'+f.id+'">👁</button></td>';
+    box.appendChild(tr);
   }
   box.querySelectorAll('input,select').forEach(inp=>{
     inp.onchange=()=>{
       const f=FOOD_ITEMS.find(x=>x.id===inp.dataset.dish); if(!f) return;
       const k=inp.dataset.k;
-      if(inp.type==='checkbox') f[k]=inp.checked;
+      if(inp.type==='checkbox'){
+        if(k==='enabled'){ f.enabled=inp.checked; renderSkillPick(); renderShop(); }
+        else f[k]=inp.checked;
+      }
       else if(k==='gifUrl'||k==='afterImg'||k==='after'||k==='afterFx') f[k]=inp.value.trim();
       else if(k==='gifSec') f.gifSec=Math.max(1,parseInt(inp.value)||f.gifSec);
       else if(k==='extraSec') f.extraSec=Math.max(0,parseInt(inp.value)||0);
@@ -685,6 +715,7 @@ function renderDishTiming(){
     };
   });
 }
+const AFTERFX_OPTS = [['none','No extra look'],['ice','🧊 Ice block (cracks open at end)'],['poison','☠️ Poison skulls + smoke'],['fire','🔥 Burns'],['hearts','💕 Hearts']];
 // ONE object drives settings. New field = add one key.
 const SETTINGS = {timerSeconds:120, keyCorrect:'ArrowRight', keyWrong:'ArrowLeft', mouseZone:true};
 // Sound: separate toggles — game SFX (whoosh/munch/gulp via WebAudio, no files) + BGM music.
