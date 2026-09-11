@@ -180,9 +180,11 @@
   #meter-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
   #mana-label{font-weight:bold; font-size:18px; display:flex; align-items:center; gap:6px}
   #combo-banner{background:#fff3bf; border-radius:10px; padding:6px 12px; font-weight:bold; text-align:center}
-  /* Shop: fixed rows, no jump when scrollbar shows/hides */
-  #shop{display:flex; gap:10px; overflow-x:auto; overflow-y:hidden; min-height:78px; align-items:center; padding:4px 2px; scrollbar-gutter:stable}
-  #food-shop{display:flex; gap:10px; margin-top:6px; overflow-x:auto; overflow-y:hidden; min-height:78px; align-items:center; padding:4px 2px; scrollbar-gutter:stable}
+  /* Food row: fixed height single row, no jump when scrollbar shows/hides */
+  #shop{display:none !important}
+  #food-shop{display:flex; gap:10px; margin-top:6px; overflow-x:scroll; overflow-y:hidden; height:96px; min-height:96px; max-height:96px; align-items:center; padding:4px 2px; scrollbar-gutter:stable both-edges}
+  #food-shop::-webkit-scrollbar{height:8px; background:#eee}
+  #food-shop::-webkit-scrollbar-thumb{background:#b08968; border-radius:4px}
   @media (max-width:640px){
     #shop{grid-template-columns:repeat(3,1fr)}
     .fighter img{width:78px; height:78px}
@@ -320,11 +322,6 @@
   </fieldset>
   </div>
   <div class="setup-pane hidden" id="sp-skill">
-  <fieldset>
-    <legend>Hero skills — tick to enable (untick = off)</legend>
-    <div class="row"><button class="btn-add" onclick="toggleAllSkills('hero',true)">Select all</button><button class="btn-clear" onclick="toggleAllSkills('hero',false)">Clear all</button></div>
-    <div id="skill-pick" style="margin-top:10px"></div>
-  </fieldset>
   <fieldset>
     <legend>Food — throw at Boss, Boss turns into eating image</legend>
     <div class="row"><button class="btn-add" onclick="toggleAllSkills('food',true)">Select all</button><button class="btn-clear" onclick="toggleAllSkills('food',false)">Clear all</button></div>
@@ -464,17 +461,8 @@ function bossRange(){
   return {startX, endX};
 }
 let rmWhiteBoss = true;
-// Hero attack skills: each has its own cast mechanic (beam / fireball / ice / clone / hammer).
-const HERO_SKILLS = [
-  {id:'kamehameha', name:'Kamekame',  icon:'assets/kamekameha.gif',    price:5, kind:'beam',     enabled:true},
-  {id:'fireball',   name:'Fireball',  icon:'assets/Fireball.gif',      price:5, kind:'fireball', enabled:true},
-  {id:'icefreeze',  name:'Ice Freeze',icon:'assets/giant-snowball.png',price:5, kind:'ice',      enabled:true, freezeSec:4},
-  {id:'deepfreeze', name:'Deep Freeze',icon:'assets/frost-nova.png',   price:5, kind:'ice',      enabled:true, freezeSec:5},
-  {id:'thunder',    name:'Thunder',   icon:'assets/thundersphere.png', price:5, kind:'thunder',  enabled:true, stunSec:3},
-  {id:'shadowclone',name:'Shadow Clone',icon:'assets/slime_clone.png', price:5, kind:'clone',    enabled:true},
-  {id:'dash',       name:'Dash',      icon:'assets/hammer.png',        price:5, kind:'dash',     enabled:true},
-];
-const SKILL_ITEMS = HERO_SKILLS; // alias for shop logic
+// Hero attack skills DELETED per request (food-only game). Kept empty so old saves don't break.
+const HERO_SKILLS = [];
 // 6 food dishes: thrown to Boss, Boss sits and eats (swap to eat.gif), then grows.
 const EAT_IMAGE = 'assets/combo/eat.gif';
 function showPane(name){
@@ -922,15 +910,25 @@ function applyFood(id){
   updateMeters(); renderShop();
   throwFood(f);
 }
-// Food flies Hero -> Boss, Boss swaps to eating gif (EAT_IMAGE), sits, then grows.
+// Food flies Hero -> Boss in an ARC, Boss swaps to eating gif (EAT_IMAGE), sits, then grows.
 // fx per dish: eat = sits & eats | burn (Chili 🌶️) = spicy red + slow | freeze (Ice Cream 🍦) = icy blue + snow | poison (Mushroom 🍄) = green + slow
 function throwFood(f, free){
   foodsEaten++;
   const g=castGeom(), proj=$('projectile');
   proj.className=''; proj.innerHTML='<span style="font-size:48px">'+f.icon+'</span>';
   proj.style.position='absolute'; proj.style.top=g.top+'px';
-  proj.classList.remove('hidden'); proj.style.left=g.heroX+'px';
-  void proj.offsetWidth; proj.style.transition='left .55s linear'; proj.style.left=g.bossX+'px';
+  proj.classList.remove('hidden'); proj.style.transition='none'; proj.style.left=g.heroX+'px';
+  // arc flight: quadratic curve Hero -> Boss, peak lifted 130px
+  const x0=g.heroX, x1=g.bossX, y0=g.top, yPeak=g.top-130;
+  const t0=performance.now(), DUR=600;
+  function stepArc(now){
+    const t=Math.min(1,(now-t0)/DUR);
+    const x=x0+(x1-x0)*t;
+    const y=(1-t)*(1-t)*y0+2*(1-t)*t*yPeak+t*t*(y0+10);
+    proj.style.left=x+'px'; proj.style.top=y+'px';
+    if(t<1 && !proj.classList.contains('hidden')) requestAnimationFrame(stepArc);
+  }
+  requestAnimationFrame(stepArc);
   setTimeout(()=>{
     proj.classList.add('hidden'); proj.style.transition='';
     const now=performance.now();
