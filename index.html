@@ -236,9 +236,9 @@
   .food-card{background:transparent; border:none}
   .skill-orb .sname,.food-card .sname{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .skill-orb .mcost,.food-card .mcost{font-size:20px; font-weight:bold; color:var(--gold); flex-shrink:0; text-shadow:1px 1px 0 #000}
-  .skill-orb .atom,.food-card .atom{position:relative; width:58px; height:58px; flex-shrink:0}
+  .skill-orb .atom,.food-card .atom{position:relative; width:58px; height:58px; flex-shrink:0; display:flex; align-items:center; justify-content:center}
   .skill-orb .atom img,.food-card .atom img{object-fit:contain; position:absolute; z-index:2}
-  .skill-orb .atom .ficon,.food-card .atom .ficon{position:absolute; left:0; right:0; top:4px; text-align:center; z-index:2}
+  .skill-orb .atom .ficon,.food-card .atom .ficon{position:relative; z-index:2; line-height:1}
   /* True atom: 3 tilted elliptical orbits (like chemistry textbook), electrons ride each orbit */
   .atom .ring{position:absolute; border-radius:50%;}
   .atom .ring.r1{inset:0; border:2px solid rgba(123,97,255,.9); transform:rotate(0deg) scaleY(.55); animation:orb1 3s linear infinite}
@@ -265,6 +265,14 @@
   #eat-frame img{width:88%; height:88%; object-fit:contain; border-radius:50%}
   #eat-frame.gif-flip img{transform:scaleX(-1)}
   #eat-frame.gif-rmwhite img{mix-blend-mode:multiply}
+  /* Eat-frame FX tint per dish: frame + gif take the dish colour */
+  #eat-frame.fx-freeze{border-color:#38bdf8; box-shadow:0 0 0 5px #bae6fd, 0 0 0 10px #0ea5e9, 0 0 44px rgba(56,189,248,.9)}
+  #eat-frame.fx-freeze img{filter:saturate(1.5) drop-shadow(0 0 12px #7dd3fc)}
+  #eat-frame.fx-burn{border-color:#ef4444; box-shadow:0 0 0 5px #fdba74, 0 0 0 10px #ef4444, 0 0 44px rgba(239,68,68,.9)}
+  #eat-frame.fx-burn img{filter:sepia(.5) saturate(2.2) hue-rotate(-25deg) drop-shadow(0 0 12px #ff5e00)}
+  #eat-frame.fx-poison{border-color:#22c55e; box-shadow:0 0 0 5px #bbf7d0, 0 0 0 10px #22c55e, 0 0 44px rgba(34,197,94,.9)}
+  #eat-frame.fx-poison img{filter:hue-rotate(70deg) saturate(1.6) drop-shadow(0 0 12px #4ade80)}
+  #eat-fx-badge{position:absolute; top:-26px; left:50%; transform:translateX(-50%); font-size:36px; z-index:9; animation:bounce 1s ease-in-out infinite; pointer-events:none}
   #projectile img{width:120px; height:120px; object-fit:contain}
   #projectile .fly-icon{display:inline-block; font-size:120px; line-height:1}
   #projectile .no-white{mix-blend-mode:multiply; border-radius:50%}
@@ -425,7 +433,7 @@
     <img id="olaf-img" class="hidden" src="assets/Snow-Olaf.png" alt="Olaf">
     <div id="poison-layer" class="hidden"></div>
     <div id="status-badge" class="hidden">🍽️<small id="status-time"></small></div>
-    <div id="eat-frame" class="hidden"><img id="eat-gif" alt="eating"></div>
+    <div id="eat-frame" class="hidden"><img id="eat-gif" alt="eating"><span id="eat-fx-badge"></span></div>
     <div id="love-text" class="hidden">I love you, Ms. Vi</div>
   </div>
 
@@ -566,7 +574,9 @@ function saveGifSettings(){
   alert('Gif settings saved! They auto-load next time.');
 }
 // Show eat gif in a round cheerful frame at Boss spot; Boss hides while eating.
-function showEatFrame(src, flip, rmwhite){
+// Frame + gif take the dish colour: freeze=ice blue, burn=fire red, poison=toxic green.
+const EAT_FX_BADGE = {freeze:'❄️', burn:'🌶️🔥', poison:'☠️', eat:'', donut:'🍩'};
+function showEatFrame(src, flip, rmwhite, fx, badge){
   const bossBox=$('boss'), frame=$('eat-frame'), gif=$('eat-gif');
   const bw=$('boss-img')?$('boss-img').clientWidth||260:260;
   frame.style.width=frame.style.height=bw+'px';
@@ -575,6 +585,9 @@ function showEatFrame(src, flip, rmwhite){
   gif.src=src;
   frame.classList.toggle('gif-flip', !!flip);
   frame.classList.toggle('gif-rmwhite', !!rmwhite);
+  frame.classList.remove('fx-freeze','fx-burn','fx-poison');
+  if(fx==='freeze'||fx==='burn'||fx==='poison') frame.classList.add('fx-'+fx);
+  $('eat-fx-badge').textContent=badge||EAT_FX_BADGE[fx]||'';
   $('boss-img').style.visibility='hidden';
   frame.classList.remove('hidden');
 }
@@ -792,10 +805,12 @@ $('arena').addEventListener('contextmenu', e=>{ if(SETTINGS.mouseZone) e.prevent
 
 /* ================= SHOP + FOOD EFFECTS (framework) ================= */
 function skillIconHtml(f, size){
-  size = size||26;
+  size = size||30;
+  // Icon is flex-centered (CSS) so it always sits at the atom centre;
+  // rings are absolutely positioned around it and rotate through 2 crossing points.
   const inner = (f.icon.indexOf('assets/')===0)
-    ? '<img src="'+f.icon+'" style="width:'+size+'px;height:'+size+'px;left:'+Math.round((52-size)/2)+'px;top:'+Math.round((52-size)/2)+'px" alt="'+f.name+'">'
-    : '<div class="ficon" style="font-size:'+size+'px;line-height:44px">'+f.icon+'</div>';
+    ? '<img src="'+f.icon+'" style="width:'+size+'px;height:'+size+'px;position:relative" alt="'+f.name+'">'
+    : '<div class="ficon" style="font-size:'+size+'px">'+f.icon+'</div>';
   return '<div class="atom">'+inner+'<span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span></div>';
 }
 function renderShop(){
@@ -818,7 +833,7 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='food-card '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,30)+'<div class="sname">'+f.name+'</div><div class="mcost">'+f.price+'</div>';
+    d.innerHTML=skillIconHtml(f,64)+'<div class="sname">'+f.name+'</div><div class="mcost">'+f.price+'</div>';
     d.title=f.name+' ('+f.price+' mana) — Boss sits and eats '+f.eatSeconds+'s';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
     d.onclick=(function(id){ return function(){ applyFood(id); }; })(f.id);
@@ -1086,7 +1101,7 @@ function throwFood(f, free){
     const now=performance.now();
     const bossBox=$('boss'), badge=$('status-badge'), love=$('love-text');
     const xSec=f.xSec||f.eatSeconds, ySec=f.ySec||0;
-    showEatFrame(eatGifSrc(), GIF_SET.eatFlip, GIF_SET.eatRmwhite); // Boss hides, gif in round frame
+    showEatFrame(eatGifSrc(), GIF_SET.eatFlip, GIF_SET.eatRmwhite, f.fx); // Boss hides, gif in round frame with dish colour
     bossFrozenUntil=now+xSec*1000;
     love.classList.add('hidden');
     badge.innerHTML='🍽️ '+f.icon+' '+f.name+'<small id="status-time"></small>';
@@ -1126,7 +1141,7 @@ function throwRandomFood(){
   setTimeout(()=>{
     proj.classList.add('hidden'); proj.style.transition='';
     const badge=$('status-badge');
-    showEatFrame(donutGifSrc(), GIF_SET.donutFlip, GIF_SET.donutRmwhite);
+    showEatFrame(donutGifSrc(), GIF_SET.donutFlip, GIF_SET.donutRmwhite, 'donut');
     bossFrozenUntil=performance.now()+3000;
     badge.innerHTML='🍩 Donut!<small id="status-time"></small>';
     badge.classList.remove('hidden');
