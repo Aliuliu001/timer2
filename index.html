@@ -180,11 +180,14 @@
   #meter-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
   #mana-label{font-weight:bold; font-size:18px; display:flex; align-items:center; gap:6px}
   #combo-banner{background:#fff3bf; border-radius:10px; padding:6px 12px; font-weight:bold; text-align:center}
-  /* Food row: fixed height single row, no jump when scrollbar shows/hides */
+  /* Food row: big icons 250% (atom 110px), fixed height single row, no jump */
   #shop{display:none !important}
-  #food-shop{display:flex; gap:10px; margin-top:6px; overflow-x:scroll; overflow-y:hidden; height:96px; min-height:96px; max-height:96px; align-items:center; padding:4px 2px; scrollbar-gutter:stable both-edges}
+  #food-shop{display:flex; gap:14px; margin-top:6px; overflow-x:scroll; overflow-y:hidden; height:170px; min-height:170px; max-height:170px; align-items:center; padding:6px 4px; scrollbar-gutter:stable both-edges}
   #food-shop::-webkit-scrollbar{height:8px; background:#eee}
   #food-shop::-webkit-scrollbar-thumb{background:#b08968; border-radius:4px}
+  #food-shop .food-card{min-width:150px; font-size:14px}
+  #food-shop .atom{width:110px !important; height:110px !important}
+  #food-shop .mcost{font-size:28px !important}
   @media (max-width:640px){
     #shop{grid-template-columns:repeat(3,1fr)}
     .fighter img{width:78px; height:78px}
@@ -252,11 +255,16 @@
   .skill-orb.ready{box-shadow:0 0 12px rgba(123,97,255,.9); background:#241b5e}
   .skill-orb.locked{opacity:.55}
   .skill-orb.off{opacity:.35; filter:grayscale(1)}
-  /* Boss grow rings: clear glow when size up */
-  .boss-grow img{animation:bounce 1.2s ease-in-out infinite, growPulse .8s ease-in-out infinite !important}
-  .boss-grow::before{content:''; position:absolute; left:50%; top:50%; width:120%; height:120%; transform:translate(-50%,-50%); border:3px solid #ffd43b; border-radius:50%; animation:ringOut 1s ease-out infinite}
-  .boss-grow::after{content:''; position:absolute; left:50%; top:50%; width:140%; height:140%; transform:translate(-50%,-50%); border:2px dashed #ff922b; border-radius:50%; animation:spin 2s linear infinite}
+  /* Boss grow: smooth scale-up, no falling rings */
+  #boss-img{transition:width .6s ease, height .6s ease}
+  .boss-grow img{animation:growPulse .8s ease-in-out infinite !important; filter:drop-shadow(0 0 22px #ffd43b) brightness(1.15) !important}
+  @keyframes growPulse{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
   @keyframes ringOut{from{opacity:1; transform:translate(-50%,-50%) scale(.7)} to{opacity:0; transform:translate(-50%,-50%) scale(1.2)}}
+  /* Eat frame: circular cheerful flat border, Boss hides while eating */
+  #eat-frame{position:absolute; z-index:8; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff; border:7px solid #ff922b; box-shadow:0 0 0 5px #ffd43b, 0 0 0 10px #51cf66, 0 0 30px rgba(255,146,43,.8); overflow:hidden}
+  #eat-frame img{width:88%; height:88%; object-fit:contain; border-radius:50%}
+  #eat-frame.gif-flip img{transform:scaleX(-1)}
+  #eat-frame.gif-rmwhite img{mix-blend-mode:multiply}
   #projectile img{width:120px; height:120px; object-fit:contain}
   #projectile .fly-icon{display:inline-block; font-size:120px; line-height:1}
   #projectile .no-white{mix-blend-mode:multiply; border-radius:50%}
@@ -339,6 +347,25 @@
     <legend>Boss perk — after eating grows + runs fast</legend>
     <label>Grow per eat (%): <input type="number" id="boss-grow-pct" value="10" min="0" max="100" style="width:70px"></label>
     <label>Speed-up (sec): <input type="number" id="boss-grow-sec" value="5" min="1" max="30" style="width:70px"></label>
+    <label>Max Boss cap (% of arena height): <input type="number" id="boss-max-pct" value="70" min="30" max="90" style="width:70px"></label>
+  </fieldset>
+  <fieldset>
+    <legend>Eat gif FX — shown in a round frame while Boss hides (all remembered)</legend>
+    <label>Skill eat gif link: <input type="text" id="eat-gif-url" placeholder="https://... (default built-in)" style="width:260px"></label>
+    <div class="row">
+      <label><input type="checkbox" id="eat-gif-rmwhite" checked> Remove white background</label>
+      <label><input type="checkbox" id="eat-gif-flip"> Flip sideways</label>
+    </div>
+    <label>Combo Donut gif link: <input type="text" id="donut-gif-url" placeholder="https://... (default built-in)" style="width:260px"></label>
+    <div class="row">
+      <label><input type="checkbox" id="donut-gif-rmwhite" checked> Remove white background</label>
+      <label><input type="checkbox" id="donut-gif-flip" checked> Flip sideways</label>
+    </div>
+    <div class="row"><button class="btn-add" onclick="saveGifSettings()">Save gif settings</button></div>
+  </fieldset>
+  <fieldset>
+    <legend>Per-dish timing — X sec show gif + Y sec extra FX after (seconds)</legend>
+    <div id="dish-timing"></div>
   </fieldset>
   </div>
   <div class="setup-pane hidden" id="sp-bg">
@@ -398,6 +425,7 @@
     <img id="olaf-img" class="hidden" src="assets/Snow-Olaf.png" alt="Olaf">
     <div id="poison-layer" class="hidden"></div>
     <div id="status-badge" class="hidden">🍽️<small id="status-time"></small></div>
+    <div id="eat-frame" class="hidden"><img id="eat-gif" alt="eating"></div>
     <div id="love-text" class="hidden">I love you, Ms. Vi</div>
   </div>
 
@@ -457,8 +485,16 @@ function setSize(who){
 }
 function applySizes(){
   const b=$('boss-img'), h=$('hero-img');
+  const arena=$('arena');
+  const arenaH=arena?arena.clientHeight||400:400;
+  const maxPct=parseInt($('boss-max-pct')?$('boss-max-pct').value:70)||70;
+  const maxPx=Math.round(arenaH*maxPct/100);
   let bw=260, hw=260;
-  if(b){ const s=Math.round(200*bossSize/100*bossGrowScale); b.style.width=s+'px'; b.style.height=s+'px'; bw=s; $('boss').style.width=s+'px'; }
+  if(b){
+    let s=Math.round(200*bossSize/100*bossGrowScale);
+    s=Math.min(s, maxPx); // cap: Boss can never overflow the screen
+    b.style.width=s+'px'; b.style.height=s+'px'; bw=s; $('boss').style.width=s+'px';
+  }
   if(h){ const s=Math.round(200*heroSize/100); h.style.width=s+'px'; h.style.height=s+'px'; hw=s; $('hero').style.width=s+'px'; }
   const sb=$('status-badge');
   if(sb) sb.style.bottom=(50+bw)+'px';
@@ -484,17 +520,87 @@ function showPane(name){
     $('sp-'+p).classList.toggle('hidden', p!==name);
     $('spb-'+p).classList.toggle('active', p===name);
   });
+  if(name==='skill') renderDishTiming();
 }
 // ONE array drives the 6 food dishes. To add dish 7, copy one object. No logic change.
 // fx: eat = just sits & eats | burn = spicy red | freeze = icy blue + snow | poison = green + slow
+// xSec = seconds showing eat gif (Boss hidden) | ySec = extra FX seconds after gif
 const FOOD_ITEMS = [
-  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, fx:'eat', enabled:true},
-  {id:'icecream',name:'Ice Cream', icon:'🍦', price:5, eatSeconds:4, fx:'freeze', enabled:true},
-  {id:'mushroom',name:'Mushroom',icon:'🍄', price:5, eatSeconds:5, fx:'poison', enabled:true},
-  {id:'chili',   name:'Chili',   icon:'🌶️', price:5, eatSeconds:4, fx:'burn', enabled:true},
-  {id:'noodles', name:'Noodles', icon:'🍜', price:5, eatSeconds:5, fx:'eat', enabled:true},
-  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, fx:'eat', enabled:true},
+  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, fx:'eat', enabled:true, xSec:6, ySec:0},
+  {id:'icecream',name:'Ice Cream', icon:'🍦', price:5, eatSeconds:4, fx:'freeze', enabled:true, xSec:4, ySec:2},
+  {id:'mushroom',name:'Mushroom',icon:'🍄', price:5, eatSeconds:5, fx:'poison', enabled:true, xSec:5, ySec:3},
+  {id:'chili',   name:'Chili',   icon:'🌶️', price:5, eatSeconds:4, fx:'burn', enabled:true, xSec:4, ySec:3},
+  {id:'noodles', name:'Noodles', icon:'🍜', price:5, eatSeconds:5, fx:'eat', enabled:true, xSec:5, ySec:0},
+  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, fx:'eat', enabled:true, xSec:5, ySec:0},
 ];
+// Eat-gif + Donut-gif settings (paste link, rmwhite, flip — all remembered in localStorage).
+const GIF_SET = {
+  eatUrl: localStorage.getItem('timer_eat_url') || '',
+  eatFlip: localStorage.getItem('timer_eat_flip')==='1',
+  eatRmwhite: localStorage.getItem('timer_eat_rmwhite')!=='0',
+  donutUrl: localStorage.getItem('timer_donut_url') || '',
+  donutFlip: localStorage.getItem('timer_donut_flip')!=='0',
+  donutRmwhite: localStorage.getItem('timer_donut_rmwhite')!=='0'
+};
+(function restoreDishTiming(){
+  try{
+    const saved=JSON.parse(localStorage.getItem('timer_dish_timing')||'{}');
+    for(const f of FOOD_ITEMS){ if(saved[f.id]){ f.xSec=saved[f.id].x??f.xSec; f.ySec=saved[f.id].y??f.ySec; } }
+  }catch(e){}
+})();
+function eatGifSrc(){ return GIF_SET.eatUrl || EAT_IMAGE; }
+function donutGifSrc(){ return GIF_SET.donutUrl || DONUT_IMAGE; }
+function saveGifSettings(){
+  GIF_SET.eatUrl=$('eat-gif-url').value.trim();
+  GIF_SET.eatFlip=$('eat-gif-flip').checked;
+  GIF_SET.eatRmwhite=$('eat-gif-rmwhite').checked;
+  GIF_SET.donutUrl=$('donut-gif-url').value.trim();
+  GIF_SET.donutFlip=$('donut-gif-flip').checked;
+  GIF_SET.donutRmwhite=$('donut-gif-rmwhite').checked;
+  localStorage.setItem('timer_eat_url', GIF_SET.eatUrl);
+  localStorage.setItem('timer_eat_flip', GIF_SET.eatFlip?'1':'0');
+  localStorage.setItem('timer_eat_rmwhite', GIF_SET.eatRmwhite?'1':'0');
+  localStorage.setItem('timer_donut_url', GIF_SET.donutUrl);
+  localStorage.setItem('timer_donut_flip', GIF_SET.donutFlip?'1':'0');
+  localStorage.setItem('timer_donut_rmwhite', GIF_SET.donutRmwhite?'1':'0');
+  alert('Gif settings saved! They auto-load next time.');
+}
+// Show eat gif in a round cheerful frame at Boss spot; Boss hides while eating.
+function showEatFrame(src, flip, rmwhite){
+  const bossBox=$('boss'), frame=$('eat-frame'), gif=$('eat-gif');
+  const bw=$('boss-img')?$('boss-img').clientWidth||260:260;
+  frame.style.width=frame.style.height=bw+'px';
+  frame.style.left=bossBox.style.left||'12px';
+  frame.style.bottom='26px';
+  gif.src=src;
+  frame.classList.toggle('gif-flip', !!flip);
+  frame.classList.toggle('gif-rmwhite', !!rmwhite);
+  $('boss-img').style.visibility='hidden';
+  frame.classList.remove('hidden');
+}
+function hideEatFrame(){
+  $('eat-frame').classList.add('hidden');
+  $('boss-img').style.visibility='visible';
+}
+// Per-dish X/Y timing editor (remembered).
+function renderDishTiming(){
+  const box=$('dish-timing'); if(!box) return; box.innerHTML='';
+  for(const f of FOOD_ITEMS){
+    const row=document.createElement('div'); row.className='row'; row.style.marginBottom='6px';
+    row.innerHTML='<b style="min-width:90px">'+f.name+'</b>'
+      +'<label>gif <input type="number" data-dish="'+f.id+'" data-k="x" value="'+f.xSec+'" min="1" max="15" style="width:55px">s</label>'
+      +'<label>fx <input type="number" data-dish="'+f.id+'" data-k="y" value="'+f.ySec+'" min="0" max="15" style="width:55px">s</label>';
+    box.appendChild(row);
+  }
+  box.querySelectorAll('input').forEach(inp=>{
+    inp.onchange=()=>{
+      const f=FOOD_ITEMS.find(x=>x.id===inp.dataset.dish); if(!f) return;
+      if(inp.dataset.k==='x') f.xSec=Math.max(1,parseInt(inp.value)||f.xSec); else f.ySec=Math.max(0,parseInt(inp.value)||0);
+      const all={}; FOOD_ITEMS.forEach(d=>all[d.id]={x:d.xSec,y:d.ySec});
+      localStorage.setItem('timer_dish_timing', JSON.stringify(all));
+    };
+  });
+}
 // ONE object drives settings. New field = add one key.
 const SETTINGS = {timerSeconds:120, keyCorrect:'ArrowRight', keyWrong:'ArrowLeft', mouseZone:true};
 // Sound slots filled from LOCAL files only (browser blocks outside mp3 links).
@@ -871,6 +977,20 @@ function castDash(f){
   setTimeout(()=>{ bossBox.classList.remove('boss-shake-strong'); $('status-badge').classList.add('hidden'); }, 2500);
 }
 // ---- overlay helpers ----
+function showPoisonCloud(bossBox, ms){
+  const arena=$('arena'); if(!arena||!bossBox) return;
+  const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect();
+  for(let i=0;i<10;i++){
+    const s=document.createElement('span');
+    s.className='trail-bit'; s.textContent=['🟢','☠️','💚'][i%3];
+    s.style.left=((br.left-ar.left)+Math.random()*br.width)+'px';
+    s.style.top=((br.top-ar.top)+Math.random()*br.height)+'px';
+    s.style.fontSize=(24+Math.random()*20)+'px';
+    arena.appendChild(s);
+    setTimeout(()=>s.remove(), 900);
+  }
+  if(ms>1000) setTimeout(()=>showPoisonCloud(bossBox, ms-1000), 1000);
+}
 function showSnow(ms){
   const box=$('snowflakes'); if(!box) return;
   box.innerHTML=''; box.classList.remove('hidden');
@@ -964,32 +1084,33 @@ function throwFood(f, free){
   setTimeout(()=>{
     proj.classList.add('hidden'); proj.style.transition='';
     const now=performance.now();
-    const bossBox=$('boss'), bossImg=$('boss-img'), badge=$('status-badge'), love=$('love-text');
-    const keepSrc=$('boss-url').value.trim()||selBoss||'assets/boss/boss1.gif';
-    bossImg.src=EAT_IMAGE; // Boss sits and eats (same gif for every dish)
-    bossFrozenUntil=now+f.eatSeconds*1000;
+    const bossBox=$('boss'), badge=$('status-badge'), love=$('love-text');
+    const xSec=f.xSec||f.eatSeconds, ySec=f.ySec||0;
+    showEatFrame(eatGifSrc(), GIF_SET.eatFlip, GIF_SET.eatRmwhite); // Boss hides, gif in round frame
+    bossFrozenUntil=now+xSec*1000;
     love.classList.add('hidden');
     badge.innerHTML='🍽️ '+f.icon+' '+f.name+'<small id="status-time"></small>';
     badge.classList.remove('hidden');
-    // dish fx on top of eating
-    if(f.fx==='burn'){ bossBox.classList.add('burning'); showFireAura(bossBox, f.eatSeconds*1000); bossSlowUntil=now+f.eatSeconds*1000; }
-    else if(f.fx==='freeze'){ bossBox.classList.add('tint-blue'); showSnow(f.eatSeconds*1000); }
-    else if(f.fx==='poison'){ bossBox.classList.add('tint-green'); bossSlowUntil=now+(f.eatSeconds+3)*1000; }
     updateMeters(); renderShop();
     setTimeout(()=>{
-      bossImg.src=keepSrc;
-      bossBox.classList.remove('burning','tint-blue','tint-green');
+      hideEatFrame();
+      // dish FX continues Y seconds on Boss after the gif
+      const t2=performance.now();
+      if(f.fx==='burn'){ bossBox.classList.add('burning'); showFireAura(bossBox, ySec*1000||3000); bossSlowUntil=t2+(ySec*1000||3000); }
+      else if(f.fx==='freeze'){ bossBox.classList.add('tint-blue'); showSnow(ySec*1000||2000); bossFrozenUntil=t2+(ySec>0?0:0); }
+      else if(f.fx==='poison'){ bossBox.classList.add('tint-green'); bossSlowUntil=t2+((ySec||3)*1000); showPoisonCloud(bossBox, (ySec||3)*1000); }
       bossGrow();
-    }, f.eatSeconds*1000);
-  }, 570);
+      setTimeout(()=>{ bossBox.classList.remove('burning','tint-blue','tint-green'); }, Math.max(ySec*1000, 3000));
+    }, xSec*1000);
+  }, 1250); // flight 1200ms + margin
 }
-// Combo 5 = FIXED Donut gif flying to Boss, plain eating only, no fx.
-// White background removed via multiply blend.
+// Combo 5 = FIXED Donut ICON (250%) flying to Boss, then Donut GIF in round frame, plain eating only, no fx.
+// Gif flip + rmwhite from settings (remembered). Boss hides while gif shows.
 const DONUT_IMAGE = 'assets/combo/donut.gif';
 function throwRandomFood(){
   const proj=$('projectile');
   const g=castGeom();
-  proj.className=''; proj.innerHTML='<img class="no-white" src="'+DONUT_IMAGE+'" alt="donut">';
+  proj.className=''; proj.innerHTML='<span class="fly-icon">🍩</span>';
   proj.style.position='absolute'; proj.style.top=g.top+'px';
   proj.classList.remove('hidden'); proj.style.transition='none'; proj.style.left=g.heroX+'px';
   const x0=g.heroX, x1=g.bossX, y0=g.top, yPeak=g.top-130;
@@ -1004,13 +1125,12 @@ function throwRandomFood(){
   requestAnimationFrame(stepArc);
   setTimeout(()=>{
     proj.classList.add('hidden'); proj.style.transition='';
-    const keepSrc=$('boss-url').value.trim()||selBoss||'assets/boss/boss1.gif';
-    const bossImg=$('boss-img'), badge=$('status-badge');
-    bossImg.src=EAT_IMAGE;
+    const badge=$('status-badge');
+    showEatFrame(donutGifSrc(), GIF_SET.donutFlip, GIF_SET.donutRmwhite);
     bossFrozenUntil=performance.now()+3000;
     badge.innerHTML='🍩 Donut!<small id="status-time"></small>';
     badge.classList.remove('hidden');
-    setTimeout(()=>{ bossImg.src=keepSrc; bossGrow(); }, 3000);
+    setTimeout(()=>{ hideEatFrame(); bossGrow(); }, 3000);
   }, 1250);
 }
 
@@ -1100,6 +1220,13 @@ function toggleFlip(who){
   if($('hero-flip-state')) $('hero-flip-state').textContent='State: '+(flipHero?'on':'off');
   if($('boss')) $('boss').classList.toggle('mirrored', flipBoss);
   if($('hero')) $('hero').classList.toggle('mirrored', flipHero);
+  if($('eat-gif-url')) $('eat-gif-url').value=GIF_SET.eatUrl;
+  if($('eat-gif-flip')) $('eat-gif-flip').checked=GIF_SET.eatFlip;
+  if($('eat-gif-rmwhite')) $('eat-gif-rmwhite').checked=GIF_SET.eatRmwhite;
+  if($('donut-gif-url')) $('donut-gif-url').value=GIF_SET.donutUrl;
+  if($('donut-gif-flip')) $('donut-gif-flip').checked=GIF_SET.donutFlip;
+  if($('donut-gif-rmwhite')) $('donut-gif-rmwhite').checked=GIF_SET.donutRmwhite;
+  renderDishTiming();
 })();
 const COMBO_FLAMES = ['assets/power_up.gif','assets/power_up.gif','assets/power_up.gif','assets/power_up.gif','assets/power_up.gif'];
 // Combo-5 is handled by castRandomSkill() (free hero skill). No burger throw.
