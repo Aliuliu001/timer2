@@ -180,17 +180,9 @@
   #meter-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
   #mana-label{font-weight:bold; font-size:18px; display:flex; align-items:center; gap:6px}
   #combo-banner{background:#fff3bf; border-radius:10px; padding:6px 12px; font-weight:bold; text-align:center}
-  /* Shop: ONE row for skills, ONE row for food (compact, more room for Boss/Player) */
-  #shop{display:flex; gap:6px; overflow-x:auto}
-  #food-shop{display:flex; gap:6px; margin-top:6px; overflow-x:auto}
-  .food-card{
-    background:#f1f3f5; border-radius:10px; padding:8px 4px; text-align:center; font-size:12px;
-    border:2px solid transparent;
-  }
-  .food-card img{width:46px; height:46px; object-fit:contain}
-  .food-card .price{font-weight:bold}
-  .food-card.ready{border-color:var(--gold); box-shadow:0 0 10px rgba(245,179,1,.8); background:#fff9db}
-  .food-card.locked{opacity:.55}
+  /* Shop: fixed rows, no jump when scrollbar shows/hides */
+  #shop{display:flex; gap:10px; overflow-x:auto; overflow-y:hidden; min-height:78px; align-items:center; padding:4px 2px; scrollbar-gutter:stable}
+  #food-shop{display:flex; gap:10px; margin-top:6px; overflow-x:auto; overflow-y:hidden; min-height:78px; align-items:center; padding:4px 2px; scrollbar-gutter:stable}
   @media (max-width:640px){
     #shop{grid-template-columns:repeat(3,1fr)}
     .fighter img{width:78px; height:78px}
@@ -207,18 +199,38 @@
   .fireball-proj img{width:64px; height:64px; object-fit:contain; filter:drop-shadow(0 0 10px #ff922b) drop-shadow(4px 0 12px #ff5e00)}
   .shake{animation:shk .45s linear}
   @keyframes shk{25%{transform:translateX(-10px)}50%{transform:translateX(8px)}75%{transform:translateX(-6px)}}
+  .boss-shake-strong{animation:shkStrong .6s linear}
+  @keyframes shkStrong{10%{transform:translateX(-16px) rotate(-2deg)}30%{transform:translateX(14px) rotate(2deg)}50%{transform:translateX(-12px)}70%{transform:translateX(10px) rotate(-1deg)}90%{transform:translateX(-6px)}}
+  .boss-stun img{animation-play-state:paused !important}
+  @keyframes growPulse{50%{transform:scale(1.06)}}
   #flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:7}
   #clone-img{position:absolute; width:110px; bottom:26px; z-index:5}
-  /* ---------- SKILL ORB (magic atom: icon inside rings + electrons) ---------- */
+  /* ---------- FOOD/SKILL OVERLAYS ---------- */
+  #snowflakes{position:absolute; inset:0; pointer-events:none; z-index:6; overflow:hidden; font-size:30px}
+  #snowflakes span{position:absolute; top:-40px; animation:fall linear infinite}
+  @keyframes fall{to{transform:translateY(420px) rotate(40deg)}}
+  #olaf-img{position:absolute; width:95px; bottom:26px; z-index:6; filter:drop-shadow(0 0 10px #b3f0ff)}
+  #poison-cloud{position:absolute; z-index:6; font-size:34px; pointer-events:none; animation:rise 1.2s ease-out infinite}
+  @keyframes rise{from{opacity:1; transform:translateY(0)} to{opacity:0; transform:translateY(-70px)}}
+  .burning img{animation:burnShk .3s linear infinite !important; filter:drop-shadow(0 0 18px #ff5e00) sepia(.7) saturate(2.2) hue-rotate(-25deg) !important}
+  @keyframes burnShk{25%{transform:translateX(-6px) scale(1.02)}50%{transform:translateX(5px)}75%{transform:translateX(-3px) scale(1.04)}}
+  .fire-aura{position:absolute; border-radius:50%; border:4px solid rgba(255,94,0,.85); box-shadow:0 0 24px #ff5e00, inset 0 0 24px rgba(255,94,0,.5); animation:ringOut 1s ease-out infinite; pointer-events:none; z-index:5}
+  /* ---------- END SCREEN win/lose ---------- */
+  #end-title.win{color:#ffd43b; text-shadow:4px 4px 0 #000, 0 0 30px #ffd43b}
+  #end-title.lose{color:#ff6b6b; text-shadow:4px 4px 0 #000, 0 0 30px #ff0000}
+  #end-stats{color:#fff; font-size:18px; background:rgba(0,0,0,.6); border-radius:10px; padding:8px 18px}
+  /* ---------- SKILL ORB (no frame: icon + atom rings only, like the picture) ---------- */
   #skill-shop{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
   .skill-orb,.food-card{
     flex:1 1 0; min-width:96px; display:flex; align-items:center; gap:6px;
-    background:#1a1440; color:#fff; border-radius:12px; padding:6px;
-    font-size:11px; border:2px solid #7b61ff; cursor:pointer; pointer-events:auto;
+    background:transparent; color:#222; border-radius:12px; padding:6px 2px;
+    font-size:11px; border:none; cursor:pointer; pointer-events:auto;
   }
-  .food-card{background:#243b2a; border-color:#38d977}
+  #deck .skill-orb{color:#fff}
+  #deck .food-card{color:#fff}
+  .food-card{background:transparent; border:none}
   .skill-orb .sname,.food-card .sname{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .skill-orb .mcost,.food-card .mcost{font-size:20px; font-weight:bold; color:var(--gold); flex-shrink:0}
+  .skill-orb .mcost,.food-card .mcost{font-size:20px; font-weight:bold; color:var(--gold); flex-shrink:0; text-shadow:1px 1px 0 #000}
   .skill-orb .atom,.food-card .atom{position:relative; width:52px; height:52px; flex-shrink:0}
   .skill-orb .atom img,.food-card .atom img{object-fit:contain; position:absolute; z-index:2}
   .skill-orb .atom .ficon,.food-card .atom .ficon{position:absolute; left:0; right:0; top:4px; text-align:center; z-index:2}
@@ -377,6 +389,9 @@
     <div id="beam" class="hidden"></div>
     <div id="flash"></div>
     <img id="clone-img" class="hidden" src="assets/slime_clone.png" alt="clone">
+    <div id="snowflakes" class="hidden"></div>
+    <img id="olaf-img" class="hidden" src="assets/Snow-Olaf.png" alt="Olaf">
+    <div id="poison-layer" class="hidden"></div>
     <div id="status-badge" class="hidden">🍽️<small id="status-time"></small></div>
     <div id="love-text" class="hidden">I love you, Ms. Vi</div>
   </div>
@@ -403,6 +418,7 @@
 
 <div id="end-screen" class="hidden">
   <h1 class="pixel-text" id="end-title">Time up!</h1>
+  <div id="end-stats"></div>
   <div class="buttons"><button id="btn-start" onclick="returnToSetup()">Play again ↻</button></div>
 </div>
 
@@ -468,13 +484,14 @@ function showPane(name){
   });
 }
 // ONE array drives the 6 food dishes. To add dish 7, copy one object. No logic change.
+// fx: eat = just sits & eats | burn = spicy red | freeze = icy blue + snow | poison = green + slow
 const FOOD_ITEMS = [
-  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, enabled:true},
-  {id:'icecream',name:'Ice Cream', icon:'🍦', price:5, eatSeconds:4, enabled:true},
-  {id:'mushroom',name:'Mushroom',icon:'🍄', price:5, eatSeconds:5, enabled:true},
-  {id:'chili',   name:'Chili',   icon:'🌶️', price:5, eatSeconds:4, enabled:true},
-  {id:'noodles', name:'Noodles', icon:'🍜', price:5, eatSeconds:5, enabled:true},
-  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, enabled:true},
+  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, fx:'eat', enabled:true},
+  {id:'icecream',name:'Ice Cream', icon:'🍦', price:5, eatSeconds:4, fx:'freeze', enabled:true},
+  {id:'mushroom',name:'Mushroom',icon:'🍄', price:5, eatSeconds:5, fx:'poison', enabled:true},
+  {id:'chili',   name:'Chili',   icon:'🌶️', price:5, eatSeconds:4, fx:'burn', enabled:true},
+  {id:'noodles', name:'Noodles', icon:'🍜', price:5, eatSeconds:5, fx:'eat', enabled:true},
+  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, fx:'eat', enabled:true},
 ];
 // ONE object drives settings. New field = add one key.
 const SETTINGS = {timerSeconds:120, keyCorrect:'ArrowRight', keyWrong:'ArrowLeft', mouseZone:true};
@@ -489,6 +506,11 @@ let bossSlowUntil=0;         // timestamp: boss walks half speed
 let mana=0, combo=0;
 let bossFastUntil=0;      // timestamp: boss walks double speed (grow buff)
 let bossGrowScale=1;      // permanent size multiplier from boss skill (+10%/eat)
+let correctCount=0, wrongCount=0, skillsCast=0, foodsEaten=0;
+const MAX_GROW=2.0, MAX_FAST_MS=10000; // balance caps: max 200% size, max 10s stacked speed
+function playSfx(src){
+  try{ const a=new Audio(src); a.volume=0.6; a.play().catch(()=>{}); }catch(e){}
+}
 
 /* ================= HELPERS ================= */
 const $ = id => document.getElementById(id);
@@ -545,6 +567,8 @@ function startArena(){
   $('boss-face').src=bossSrc; $('hero-face').src=heroSrc;
   // Reset state
   remainingTimeMs=totalTimeMs; bossProgress=0; mana=0; combo=0;
+  correctCount=0; wrongCount=0; skillsCast=0; foodsEaten=0;
+  clearFxLayers();
   bossFrozenUntil=0; bossSlowUntil=0; bossFastUntil=0; bossGrowScale=1;
   $('progress-fill').style.width='0%';
   $('progress-fill').className='progress-fill';
@@ -615,29 +639,33 @@ function quitArena(){
 }
 function triggerEnd(win){
   isRunning=false; cancelAnimationFrame(animationFrameId);
-  $('end-title').textContent=win?'Time up!':'Oh no!';
+  const t=$('end-title');
+  t.textContent=win?'🏆 HERO WINS!':'👹 BOSS WINS!';
+  t.className='pixel-text '+(win?'win':'lose');
+  $('end-stats').innerHTML='✓ '+correctCount+' correct &nbsp;•&nbsp; ✗ '+wrongCount+' wrong &nbsp;•&nbsp; ✨ '+skillsCast+' skills &nbsp;•&nbsp; 🍽️ '+foodsEaten+' eaten';
   $('end-screen').classList.remove('hidden');
+  playSfx(win?'assets/Win-battle.mp3':'assets/Defeated.mp3');
 }
 function returnToSetup(){ $('end-screen').classList.add('hidden'); showTab('setup'); }
 
 /* ================= CORRECT / WRONG CORE (all 3 inputs call these) ================= */
 function onCorrect(){
   if($('screen-arena').classList.contains('hidden')) return;
-  mana=Math.min(10,mana+1); combo++;
+  mana=Math.min(10,mana+1); combo++; correctCount++;
   updateMeters(); renderShop();
   if(combo>=5){
-    combo=0; // free hero skill cast, does not cost mana
+    combo=0; // free FOOD shot, does not cost mana
     updateMeters();
     const banner=$('combo-banner');
-    banner.textContent='🎉 COMBO 5! Hero casts a skill!';
+    banner.textContent='🎉 COMBO 5! Free food for Boss!';
     banner.classList.remove('hidden');
     setTimeout(()=>banner.classList.add('hidden'),2500);
-    castRandomSkill();
+    throwRandomFood();
   }
 }
 function onWrong(){
   if($('screen-arena').classList.contains('hidden')) return;
-  combo=0; updateMeters(); renderShop();
+  combo=0; wrongCount++; updateMeters(); renderShop();
 }
 function updateMeters(){
   document.querySelectorAll('#combo-flames img').forEach((im,i)=>im.classList.toggle('lit', i<combo));
@@ -685,7 +713,7 @@ function renderShop(){
     d.innerHTML=skillIconHtml(f,30)+'<div class="sname">'+f.name+'</div><div class="mcost">'+f.price+'</div>';
     d.title=f.name+' ('+f.price+' mana) — Boss sits and eats '+f.eatSeconds+'s';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
-    d.onclick=(function(id){ return function(){ buyFood(id); }; })(f.id);
+    d.onclick=(function(id){ return function(){ applyFood(id); }; })(f.id);
     fs.appendChild(d);
   }
   fs.style.display='flex';
@@ -748,22 +776,24 @@ function castRandomSkill(){
   if(!pool.length) return;
   castSkill(pool[Math.floor(Math.random()*pool.length)].id, true);
 }
-// 1) Kamekame: beam from Hero, Boss shakes + knocked back.
+// 1) Kamekame: blue laser beam from Hero, Boss shakes HARD + knocked back.
 function castBeam(f){
+  skillsCast++;
   const g=castGeom(), beam=$('beam');
   beam.style.left=g.heroX+'px'; beam.style.top=g.top+'px'; beam.style.width='0px';
   beam.classList.remove('hidden');
   requestAnimationFrame(()=>{ beam.style.transition='width .35s linear'; beam.style.width=Math.max(60,(g.bossX-g.heroX))+'px'; });
   setTimeout(()=>{
     const bossBox=$('boss');
-    bossBox.classList.remove('shake'); void bossBox.offsetWidth; bossBox.classList.add('shake');
+    bossBox.classList.remove('boss-shake-strong'); void bossBox.offsetWidth; bossBox.classList.add('boss-shake-strong');
     bossProgress=Math.max(0,bossProgress-4); // knocked back
     updateGraphics();
-    setTimeout(()=>{ beam.classList.add('hidden'); beam.style.transition=''; }, 350);
+    setTimeout(()=>{ beam.classList.add('hidden'); beam.style.transition=''; bossBox.classList.remove('boss-shake-strong'); }, 600);
   }, 380);
 }
-// 2) Fireball: flaming ball with tail flies Hero -> Boss.
+// 2) Fireball: flaming ball flies Hero -> Boss. Boss burns red 4s with fire aura.
 function castFireball(f){
+  skillsCast++;
   const g=castGeom(), arena=$('arena'), proj=$('projectile');
   proj.className='fireball-proj'; proj.innerHTML='<img src="'+f.icon+'" alt="fireball">';
   proj.style.position='absolute'; proj.style.bottom='auto'; proj.style.top=g.top+'px';
@@ -772,16 +802,19 @@ function castFireball(f){
   setTimeout(()=>{
     proj.classList.add('hidden'); proj.style.transition='';
     const bossBox=$('boss');
-    bossBox.classList.remove('shake'); void bossBox.offsetWidth; bossBox.classList.add('shake');
-    bossBox.classList.add('tint-fire');
+    bossBox.classList.remove('boss-shake-strong'); void bossBox.offsetWidth; bossBox.classList.add('boss-shake-strong');
+    bossBox.classList.add('burning');
+    showFireAura(bossBox, 4000);
     $('status-badge').innerHTML='🔥 Fireball<small id="status-time"></small>';
     $('status-badge').classList.remove('hidden');
     bossSlowUntil=performance.now()+4000;
-    setTimeout(()=>{ bossBox.classList.remove('tint-fire'); $('status-badge').classList.add('hidden'); }, 4000);
+    playSfx('assets/Fireball-sound.mp3');
+    setTimeout(()=>{ bossBox.classList.remove('burning'); bossBox.classList.remove('boss-shake-strong'); $('status-badge').classList.add('hidden'); }, 4000);
   }, 620);
 }
-// 3) Ice / Deep Freeze: ice ball hits, Boss frozen.
+// 3) Ice / Deep Freeze: ice ball hits, Boss covered in blue ice + snowflakes fall.
 function castIce(f){
+  skillsCast++;
   const g=castGeom(), proj=$('projectile');
   proj.className=''; proj.innerHTML='<img src="'+f.icon+'" style="width:56px;height:56px" alt="ice">';
   proj.style.position='absolute'; proj.style.top=g.top+'px';
@@ -791,26 +824,31 @@ function castIce(f){
     proj.classList.add('hidden'); proj.style.transition='';
     const bossBox=$('boss');
     bossBox.classList.add('tint-blue');
+    showSnow((f.freezeSec||4)*1000);
     $('status-badge').innerHTML='❄️ Frozen<small id="status-time"></small>';
     $('status-badge').classList.remove('hidden');
     bossFrozenUntil=performance.now()+(f.freezeSec||4)*1000;
+    playSfx('assets/Freeze-sound.mp3');
     setTimeout(()=>{ bossBox.classList.remove('tint-blue'); $('status-badge').classList.add('hidden'); }, (f.freezeSec||4)*1000);
   }, 570);
 }
-// 4) Thunder: flash + shake + stun.
+// 4) Thunder: bright flash + Boss stunned standing still.
 function castThunder(f){
+  skillsCast++;
   const fl=$('flash');
   fl.style.transition='none'; fl.style.opacity='0.9';
   requestAnimationFrame(()=>{ fl.style.transition='opacity .5s'; fl.style.opacity='0'; });
   const bossBox=$('boss');
-  bossBox.classList.remove('shake'); void bossBox.offsetWidth; bossBox.classList.add('shake');
-  $('status-badge').innerHTML='⚡ Thunder<small id="status-time"></small>';
+  bossBox.classList.remove('boss-shake-strong'); void bossBox.offsetWidth; bossBox.classList.add('boss-shake-strong');
+  bossBox.classList.add('boss-stun');
+  $('status-badge').innerHTML='⚡ Stunned<small id="status-time"></small>';
   $('status-badge').classList.remove('hidden');
   bossFrozenUntil=performance.now()+(f.stunSec||3)*1000;
-  setTimeout(()=>{ $('status-badge').classList.add('hidden'); }, (f.stunSec||3)*1000);
+  setTimeout(()=>{ bossBox.classList.remove('boss-stun'); bossBox.classList.remove('boss-shake-strong'); $('status-badge').classList.add('hidden'); }, (f.stunSec||3)*1000);
 }
-// 5) Shadow Clone: slime appears beside Boss.
+// 5) Shadow Clone: green slime appears beside Boss.
 function castClone(f){
+  skillsCast++;
   const bossBox=$('boss'), cl=$('clone-img');
   cl.style.left=(bossBox.offsetLeft-120)+'px';
   cl.classList.remove('hidden');
@@ -819,15 +857,49 @@ function castClone(f){
   bossSlowUntil=performance.now()+4000;
   setTimeout(()=>{ cl.classList.add('hidden'); $('status-badge').classList.add('hidden'); }, 4000);
 }
-// 6) Dash: Boss knocked back fast.
+// 6) Dash: Boss knocked back FAR.
 function castDash(f){
+  skillsCast++;
   const bossBox=$('boss');
-  bossBox.classList.remove('shake'); void bossBox.offsetWidth; bossBox.classList.add('shake');
-  bossProgress=Math.max(0,bossProgress-8);
+  bossBox.classList.remove('boss-shake-strong'); void bossBox.offsetWidth; bossBox.classList.add('boss-shake-strong');
+  bossProgress=Math.max(0,bossProgress-10);
   $('status-badge').innerHTML='🚀 Dash hit<small id="status-time"></small>';
   $('status-badge').classList.remove('hidden');
   updateGraphics();
-  setTimeout(()=>{ $('status-badge').classList.add('hidden'); }, 2500);
+  setTimeout(()=>{ bossBox.classList.remove('boss-shake-strong'); $('status-badge').classList.add('hidden'); }, 2500);
+}
+// ---- overlay helpers ----
+function showSnow(ms){
+  const box=$('snowflakes'); if(!box) return;
+  box.innerHTML=''; box.classList.remove('hidden');
+  for(let i=0;i<24;i++){
+    const s=document.createElement('span');
+    s.textContent=['❄️','❄','✻'][i%3];
+    s.style.left=(Math.random()*100)+'%';
+    s.style.animationDuration=(1.2+Math.random()*1.5)+'s';
+    s.style.fontSize=(16+Math.random()*22)+'px';
+    box.appendChild(s);
+  }
+  setTimeout(()=>{ box.classList.add('hidden'); box.innerHTML=''; }, ms||4000);
+}
+function showFireAura(bossBox, ms){
+  const arena=$('arena'); if(!arena||!bossBox) return;
+  const r=document.createElement('div');
+  r.className='fire-aura';
+  const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect();
+  const size=Math.max(br.width,br.height)*1.3;
+  r.style.width=r.style.height=size+'px';
+  r.style.left=((br.left-ar.left)+br.width/2-size/2)+'px';
+  r.style.top=((br.top-ar.top)+br.height/2-size/2)+'px';
+  arena.appendChild(r);
+  setTimeout(()=>r.remove(), ms||4000);
+}
+function clearFxLayers(){
+  ['snowflakes','poison-layer'].forEach(id=>{ const e=$(id); if(e){ e.classList.add('hidden'); e.innerHTML=''; } });
+  const o=$('olaf-img'); if(o) o.classList.add('hidden');
+  const c=$('clone-img'); if(c) c.classList.add('hidden');
+  document.querySelectorAll('.fire-aura').forEach(e=>e.remove());
+  const b=$('boss'); if(b) b.classList.remove('burning','tint-blue','tint-fire','boss-stun','boss-shake-strong','boss-grow');
 }
 // Boss skill: after eating, grows +% size + runs fast X sec, with glow rings.
 function bossGrow(){
@@ -851,7 +923,9 @@ function applyFood(id){
   throwFood(f);
 }
 // Food flies Hero -> Boss, Boss swaps to eating gif (EAT_IMAGE), sits, then grows.
-function throwFood(f){
+// fx per dish: eat = sits & eats | burn (Chili 🌶️) = spicy red + slow | freeze (Ice Cream 🍦) = icy blue + snow | poison (Mushroom 🍄) = green + slow
+function throwFood(f, free){
+  foodsEaten++;
   const g=castGeom(), proj=$('projectile');
   proj.className=''; proj.innerHTML='<span style="font-size:48px">'+f.icon+'</span>';
   proj.style.position='absolute'; proj.style.top=g.top+'px';
@@ -860,19 +934,30 @@ function throwFood(f){
   setTimeout(()=>{
     proj.classList.add('hidden'); proj.style.transition='';
     const now=performance.now();
-    const bossImg=$('boss-img'), badge=$('status-badge'), love=$('love-text');
+    const bossBox=$('boss'), bossImg=$('boss-img'), badge=$('status-badge'), love=$('love-text');
     const keepSrc=$('boss-url').value.trim()||selBoss||'assets/boss/boss1.gif';
-    bossImg.src=EAT_IMAGE; // Boss sits and eats
+    bossImg.src=EAT_IMAGE; // Boss sits and eats (same gif for every dish)
     bossFrozenUntil=now+f.eatSeconds*1000;
     love.classList.add('hidden');
     badge.innerHTML='🍽️ '+f.icon+' '+f.name+'<small id="status-time"></small>';
     badge.classList.remove('hidden');
+    // dish fx on top of eating
+    if(f.fx==='burn'){ bossBox.classList.add('burning'); showFireAura(bossBox, f.eatSeconds*1000); bossSlowUntil=now+f.eatSeconds*1000; }
+    else if(f.fx==='freeze'){ bossBox.classList.add('tint-blue'); showSnow(f.eatSeconds*1000); }
+    else if(f.fx==='poison'){ bossBox.classList.add('tint-green'); bossSlowUntil=now+(f.eatSeconds+3)*1000; }
     updateMeters(); renderShop();
     setTimeout(()=>{
       bossImg.src=keepSrc;
+      bossBox.classList.remove('burning','tint-blue','tint-green');
       bossGrow();
     }, f.eatSeconds*1000);
   }, 570);
+}
+// Combo 5 = free random enabled dish (no mana cost)
+function throwRandomFood(){
+  const pool=FOOD_ITEMS.filter(f=>f.enabled!==false);
+  if(!pool.length) return;
+  throwFood(pool[Math.floor(Math.random()*pool.length)], true);
 }
 
 /* ================= MUSIC (repo mp3 remembered, upload also works) ================= */
