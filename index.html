@@ -714,7 +714,7 @@ function toggleSfx(){
   localStorage.setItem('timer_sfx', AUDIO.sfxOn?'1':'0');
   $('btn-sfx').textContent=AUDIO.sfxOn?'🔊':'🔇';
 }
-(function restoreSfx(){ if($('btn-sfx')) $('btn-sfx').textContent=AUDIO.sfxOn?'🔊':'🔇'; })();
+(function restoreSfx(){ var b=document.getElementById('btn-sfx'); if(b) b.textContent=AUDIO.sfxOn?'🔊':'🔇'; })();
 
 /* ================= STATE ================= */
 let totalTimeMs=0, remainingTimeMs=0, lastFrameTime=0, animationFrameId=null, isRunning=false;
