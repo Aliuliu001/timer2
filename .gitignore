@@ -3,3 +3,4 @@ package-lock.json
 package.json
 _test_*.mjs
 _test_*.cjs
+.env
