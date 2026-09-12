@@ -285,6 +285,10 @@
     border:5px solid rgba(14,165,233,.9); box-shadow:0 0 26px rgba(56,189,248,.9), inset 0 0 26px rgba(255,255,255,.5)}
   #ice-block.crack{animation:iceCrack .5s ease-out forwards}
   @keyframes iceCrack{to{opacity:0; transform:scale(1.25) rotate(4deg)}}
+  /* Ms. Vi fan text: rises from below the eat-frame in fan directions, one every 1.5s */
+  .msvi-float{position:absolute; z-index:9; pointer-events:none; font-family:'Press Start 2P',monospace;
+    font-size:20px; color:#ff97d0; text-shadow:2px 2px 0 #000; white-space:nowrap;
+    opacity:0; transform:translate(0,14px); transition:transform 1.4s ease-out, opacity .25s ease-in}
   .after-float{position:absolute; z-index:7; pointer-events:none; animation:rise 1.4s ease-out forwards}
   /* ---------- END SCREEN win/lose ---------- */
   #end-title.win{color:#ffd43b; text-shadow:4px 4px 0 #000, 0 0 30px #ffd43b}
@@ -606,12 +610,12 @@ function showPane(name){
 // afterFx: none | ice (🧊 block, cracks open at end) | poison (💀 + green smoke) | fire (🔥 burns) | hearts (💕)
 // gifSec = seconds the eating gif shows (Boss hides) | extraSec = seconds the after-state lasts
 const FOOD_ITEMS = [
-  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, fx:'eat', enabled:true, gifSec:6, extraSec:0, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'normal', afterFx:'none', afterImg:''},
-  {id:'icecream',name:'Ice Cream', icon:'🍦', price:5, eatSeconds:4, fx:'freeze', enabled:true, gifSec:4, extraSec:3, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'stop', afterFx:'ice', afterImg:''},
-  {id:'mushroom',name:'Mushroom',icon:'🍄', price:5, eatSeconds:5, fx:'poison', enabled:true, gifSec:5, extraSec:3, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'slow', afterFx:'poison', afterImg:''},
-  {id:'chili',   name:'Chili',   icon:'🌶️', price:5, eatSeconds:4, fx:'burn', enabled:true, gifSec:4, extraSec:3, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'fast', afterFx:'fire', afterImg:''},
-  {id:'noodles', name:'Noodles', icon:'🍜', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:0, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'normal', afterFx:'none', afterImg:''},
-  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:3, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'slow', afterFx:'hearts', afterImg:''},
+  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, fx:'eat', enabled:true, gifSec:6, extraSec:0, gifUrl:'assets/food/pizza.gif', gifFlip:false, gifRmwhite:true, after:'normal', afterFx:'none', afterImg:''},
+  {id:'icecream',name:'Ice Cream', icon:'🍦', price:5, eatSeconds:4, fx:'freeze', enabled:true, gifSec:4, extraSec:3, gifUrl:'assets/food/icecream.gif', gifFlip:false, gifRmwhite:true, after:'stop', afterFx:'ice', afterImg:'assets/food/ice-block.jpg'},
+  {id:'mushroom',name:'Mushroom',icon:'🍄', price:5, eatSeconds:5, fx:'poison', enabled:true, gifSec:5, extraSec:3, gifUrl:'assets/food/mushroom.gif', gifFlip:false, gifRmwhite:true, after:'slow', afterFx:'poison', afterImg:''},
+  {id:'chili',   name:'Chili',   icon:'🌶️', price:5, eatSeconds:4, fx:'burn', enabled:true, gifSec:4, extraSec:3, gifUrl:'assets/food/chili.gif', gifFlip:false, gifRmwhite:true, after:'fast', afterFx:'fire', afterImg:''},
+  {id:'noodles', name:'Noodles', icon:'🍜', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:0, gifUrl:'assets/food/noodles.gif', gifFlip:false, gifRmwhite:true, after:'normal', afterFx:'none', afterImg:''},
+  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:3, gifUrl:'assets/food/teacher.gif', gifFlip:false, gifRmwhite:true, after:'slow', afterFx:'hearts', afterImg:''},
 ];
 // Donut-gif settings (remembered).
 const GIF_SET = {
@@ -624,7 +628,9 @@ const GIF_SET = {
     const saved=JSON.parse(localStorage.getItem('timer_dishes')||'[]');
     for(const s of saved){
       const f=FOOD_ITEMS.find(x=>x.id===s.id); if(!f) continue;
-      Object.assign(f, {gifSec:s.gifSec??f.gifSec, extraSec:s.extraSec??f.extraSec, gifUrl:s.gifUrl||'', gifFlip:!!s.gifFlip, gifRmwhite:s.gifRmwhite!==false, after:s.after||f.after, afterFx:s.afterFx||f.afterFx, afterImg:s.afterImg||''});
+      const keepUrl=s.gifUrl&&s.gifUrl.trim()&&s.gifUrl.indexOf('pinimg.com')<0;
+      const keepImg=s.afterImg&&s.afterImg.trim()&&s.afterImg.indexOf('pinimg.com')<0;
+      Object.assign(f, {gifSec:s.gifSec??f.gifSec, extraSec:s.extraSec??f.extraSec, gifUrl:keepUrl?s.gifUrl:f.gifUrl, gifFlip:!!s.gifFlip, gifRmwhite:s.gifRmwhite!==false, after:s.after||f.after, afterFx:s.afterFx||f.afterFx, afterImg:keepImg?s.afterImg:f.afterImg});
     }
     const custom=JSON.parse(localStorage.getItem('timer_custom_dishes')||'[]');
     for(const c of custom){ if(!FOOD_ITEMS.some(x=>x.id===c.id)) FOOD_ITEMS.push(c); }
@@ -1264,7 +1270,8 @@ function throwFood(f, free){
     else if(f.fx==='freeze'){ showSnow(gifSec*1000); }
     else if(f.fx==='poison'){ showPoisonCloud(bossBox, gifSec*1000); }
     bossFrozenUntil=now+gifSec*1000;
-    love.classList.add('hidden');
+    love.classList.add('hidden'); love.innerHTML='I love you, Ms. Vi'; stopMsVi();
+    if(f.id==='teacher'){ showMsVi(bossBox, gifSec*1000); }
     badge.innerHTML=f.icon+' '+f.name+'<small id="status-time"></small>';
     badge.className=''; badge.id='status-badge';
     if(f.fx==='freeze'||f.fx==='burn'||f.fx==='poison') badge.classList.add('fx-'+f.fx);
@@ -1289,7 +1296,7 @@ function applyAfterState(f, t2){
   else if(after==='slow'){ bossSlowUntil=t2+ms; }
   else if(after==='fast'){ bossFastUntil=Math.max(bossFastUntil, t2+Math.min(ms, 10000)); }
   if(fx==='ice'){ showIceBlock(bossBox, f, ms); bossFrozenUntil=t2+ms; }
-  else if(fx==='poison'){ bossBox.classList.add('tint-green'); showPoisonCloud(bossBox, ms); floatAfter(bossBox, f.afterImg||'💀', ms); if(after==='normal') bossSlowUntil=t2+ms; }
+  else if(fx==='poison'){ bossBox.classList.add('tint-green'); showPoisonCloud(bossBox, ms); showPoisonCloud(bossBox, ms); floatAfter(bossBox,'☠️',ms); floatAfter(bossBox,'💀',ms); if(after==='normal') bossSlowUntil=t2+ms; }
   else if(fx==='fire'){ bossBox.classList.add('burning'); showFireAura(bossBox, ms); if(after==='normal') bossSlowUntil=t2+ms; }
   else if(fx==='hearts'){ floatAfter(bossBox, f.afterImg||'💕', ms); if(after==='normal') bossSlowUntil=t2+ms; }
   else if(f.afterImg){ floatAfter(bossBox, '<img src="'+f.afterImg+'" style="width:90px;height:90px;object-fit:contain">', ms); }
@@ -1297,21 +1304,52 @@ function applyAfterState(f, t2){
 function clearAfterState(f){
   const bossBox=$('boss');
   bossBox.classList.remove('burning','tint-blue','tint-green');
+  stopMsVi();
+  document.querySelectorAll('.msvi-float').forEach(e=>e.remove());
   const ib=$('ice-block'); if(ib){ ib.classList.add('crack'); setTimeout(()=>{ ib.classList.add('hidden'); ib.classList.remove('crack'); }, 500); }
   document.querySelectorAll('.after-float').forEach(e=>e.remove());
 }
-// Ice block: covers Boss, cracks open at the end.
+// Ice block: bigger than Boss (1.6x), local photo at 50% so Boss shows inside, cracks open at end.
 function showIceBlock(bossBox, f, ms){
   const arena=$('arena'), ib=$('ice-block'); if(!arena||!ib||!bossBox) return;
   const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect();
-  const imgHtml=f.afterImg?'<img src="'+f.afterImg+'" style="width:80%;height:80%;object-fit:contain">':'<span style="font-size:64px">🧊</span>';
+  const K=1.6;
+  const imgHtml=f.afterImg?'<img src="'+f.afterImg+'" style="width:100%;height:100%;object-fit:cover;opacity:.5;border-radius:14px">':'<span style="font-size:64px">🧊</span>';
   ib.innerHTML=imgHtml;
-  ib.style.width=(br.width*1.25)+'px'; ib.style.height=(br.height*1.25)+'px';
-  ib.style.left=((br.left-ar.left)+br.width/2-br.width*1.25/2)+'px';
-  ib.style.top=((br.top-ar.top)+br.height-br.height*1.25)+'px';
+  if(f.afterImg) ib.style.background='none';
+  ib.style.width=(br.width*K)+'px'; ib.style.height=(br.height*K)+'px';
+  ib.style.left=((br.left-ar.left)+br.width/2-br.width*K/2)+'px';
+  ib.style.top=((br.top-ar.top)+br.height-br.height*K)+'px';
   ib.classList.remove('hidden','crack');
   showSnow(ms);
   setTimeout(()=>{ ib.classList.add('crack'); }, Math.max(ms-500, 100));
+}
+// "Ms. Vi" fan text: spawns ABOVE the eat-frame every 1.5s, rising outward in a fan
+// (straight up, up-left, up-right...), never overlapping the gif. Stops when cleared.
+let msViTimer=null;
+function stopMsVi(){ if(msViTimer){ clearInterval(msViTimer); msViTimer=null; } }
+function showMsVi(bossBox, totalMs){
+  const arena=$('arena'); if(!arena) return;
+  stopMsVi();
+  const ar=arena.getBoundingClientRect();
+  const frame=$('eat-frame'), fr=frame&&!frame.classList.contains('hidden')?frame.getBoundingClientRect():bossBox.getBoundingClientRect();
+  const cx=(fr.left-ar.left)+fr.width/2, top=(fr.top-ar.top);
+  const fanDx=[0,-70,70,-130,130,-40,40];
+  let k=0;
+  function one(){
+    const s=document.createElement('div');
+    s.className='msvi-float'; s.textContent='Ms. Vi 💕';
+    s.style.left=cx+'px'; s.style.top=(top-6)+'px';
+    arena.appendChild(s);
+    const dx=fanDx[k%fanDx.length]; k++;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      s.style.opacity='1'; s.style.transform='translate(calc(-50% + '+dx+'px),-110px)';
+    }));
+    setTimeout(()=>{ s.style.opacity='0'; setTimeout(()=>s.remove(), 300); }, 1500);
+  }
+  one();
+  msViTimer=setInterval(one, 1500);
+  setTimeout(stopMsVi, totalMs+400);
 }
 // Floating emoji/image above Boss during the after-state.
 function floatAfter(bossBox, html, ms){
