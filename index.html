@@ -598,7 +598,7 @@ function showPane(name){
     $('sp-'+p).classList.toggle('hidden', p!==name);
     $('spb-'+p).classList.toggle('active', p===name);
   });
-  if(name==='skill') renderDishTiming();
+  if(name==='food') renderDishTiming();
 }
 // ONE array drives the food dishes. Add dish 7 with + Add dish button. No logic change.
 // fx = look WHILE eating (frame colour + falling FX) | after + afterFx = Boss state AFTER gif ends.
@@ -631,7 +631,7 @@ const GIF_SET = {
   }catch(e){}
 })();
 function saveDishes(){
-  localStorage.setItem('timer_dishes', JSON.stringify(FOOD_ITEMS.map(f=>({id:f.id,gifSec:f.gifSec,extraSec:f.extraSec,gifUrl:f.gifUrl||'',gifFlip:!!f.gifFlip,gifRmwhite:f.gifRmwhite!==false,after:f.after,afterFx:f.afterFx,afterImg:f.afterImg||''}))));
+  localStorage.setItem('timer_dishes', JSON.stringify(FOOD_ITEMS.map(f=>({id:f.id,gifSec:f.gifSec,extraSec:f.extraSec,gifUrl:f.gifUrl||'',gifFlip:!!f.gifFlip,gifRmwhite:f.gifRmwhite!==false,after:f.after||'normal',afterFx:f.afterFx||'none',afterImg:f.afterImg||''}))));
   localStorage.setItem('timer_custom_dishes', JSON.stringify(FOOD_ITEMS.filter(f=>f.custom)));
 }
 function dishGifSrc(f){ return f.gifUrl || EAT_IMAGE; }
@@ -648,7 +648,7 @@ function saveGifSettings(){
 function addDish(){
   const name=prompt('New dish name (e.g. Burger):'); if(!name) return;
   const icon=prompt('Icon emoji for '+name+' (e.g. 🍔):')||'🍽️';
-  FOOD_ITEMS.push({id:'custom'+Date.now(), name, icon, price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:0, gifUrl:'', gifFlip:false, gifRmwhite:true, custom:true});
+  FOOD_ITEMS.push({id:'custom'+Date.now(), name, icon, price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:0, gifUrl:'', gifFlip:false, gifRmwhite:true, after:'normal', afterFx:'none', afterImg:'', custom:true});
   saveDishes(); renderDishTiming(); renderShop();
 }
 // Show eat gif in a round cheerful frame at Boss spot; Boss hides while eating.
@@ -715,6 +715,7 @@ function renderDishTiming(){
     };
   });
 }
+const AFTER_OPTS = [['normal','🚶 Walks on'],['stop','🧊 Stands still'],['slow','🐢 Half speed'],['fast','🚀 Double speed']];
 const AFTERFX_OPTS = [['none','No extra look'],['ice','🧊 Ice block (cracks open at end)'],['poison','☠️ Poison skulls + smoke'],['fire','🔥 Burns'],['hearts','💕 Hearts']];
 // ONE object drives settings. New field = add one key.
 const SETTINGS = {timerSeconds:120, keyCorrect:'ArrowRight', keyWrong:'ArrowLeft', mouseZone:true};
@@ -758,6 +759,7 @@ let bossGrowScale=1;      // permanent size multiplier from boss skill (+10%/eat
 let correctCount=0, wrongCount=0, skillsCast=0, foodsEaten=0;
 let foodQueue=[];         // dishes thrown while Boss is eating wait here — nothing is lost
 let bossEating=false;     // true while the eat gif shows
+let growBadgeSeq=0;       // invalidates old "+10% fast" hide timers when a new meal starts
 const MAX_GROW=2.0, MAX_FAST_MS=10000; // balance caps: max 200% size, max 10s stacked speed
 function playSfx(src){
   try{ const a=new Audio(src); a.volume=0.6; a.play().catch(()=>{}); }catch(e){}
@@ -1181,17 +1183,25 @@ function clearFxLayers(){
   const b=$('boss'); if(b) b.classList.remove('burning','tint-blue','tint-fire','boss-stun','boss-shake-strong','boss-grow');
 }
 // Boss skill: after eating, grows +% size + runs fast X sec, with glow rings.
+// The grow badge auto-hides, and old hide-timers can't stick on screen when a new meal starts.
 function bossGrow(){
   const pct=parseInt($('boss-grow-pct').value)||10;
   const sec=parseInt($('boss-grow-sec').value)||5;
   bossGrowScale*= (1+pct/100);
   bossFastUntil=performance.now()+sec*1000;
   applySizes();
+  const mySeq=++growBadgeSeq;
   const bossBox=$('boss'), badge=$('status-badge');
   bossBox.classList.add('boss-grow');
   badge.innerHTML='👹 +'+pct+'% fast '+sec+'s<small id="status-time"></small>';
+  badge.className=''; badge.id='status-badge';
   badge.classList.remove('hidden');
-  setTimeout(()=>{ bossBox.classList.remove('boss-grow'); }, sec*1000);
+  setTimeout(()=>{
+    if(mySeq!==growBadgeSeq) return; // a newer meal took over — leave its badge alone
+    bossBox.classList.remove('boss-grow');
+    if(bossEating) return;           // next dish already started — its own badge is showing
+    badge.classList.add('hidden');
+  }, sec*1000);
 }
 function applyFood(id){
   const f=FOOD_ITEMS.find(x=>x.id===id); if(!f) return;
