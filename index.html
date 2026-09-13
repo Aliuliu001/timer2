@@ -199,12 +199,12 @@
   }
   .progress-fill{
     height:100%; width:0%; border-radius:12px; position:relative;
-    background:linear-gradient(90deg,#57e389,#2ea86a);
-    box-shadow:0 0 12px rgba(87,227,137,.8);
-    transition:width .2s linear;
+    background:#2FA96B;
+    box-shadow:0 0 12px rgba(47,169,107,.8);
+    transition:width .3s linear, background-color .5s ease;
   }
-  .progress-fill.mid{background:linear-gradient(90deg,#ffd43b,#f59f00); box-shadow:0 0 12px rgba(255,212,59,.8)}
-  .progress-fill.low{background:linear-gradient(90deg,#ff6b6b,#e03131); box-shadow:0 0 12px rgba(255,107,107,.9); animation:pulse 1s infinite}
+  .progress-fill.mid{background:#F5B501; box-shadow:0 0 12px rgba(245,181,1,.8)}
+  .progress-fill.low{background:#E03131; box-shadow:0 0 12px rgba(224,49,49,.8)}
   /* Shine sweep on the bar */
   .progress-fill::after{
     content:''; position:absolute; inset:0; border-radius:12px;
@@ -554,9 +554,18 @@
 // Galleries live in the repo (no Pinterest block). Paste-link box adds one more.
 const BOSS_CHOICES = [
   {name:'Boss 1', src:'assets/boss/boss1.gif'},
-  {name:'Boss 2', src:'assets/boss/boss2.gif'},
-  {name:'Boss 3', src:'assets/boss/boss3.gif'},
+  {name:'Boss 2 (small sprite, auto 2x)', src:'assets/boss/boss2.gif', scale:2},
+  {name:'Boss 3 (dark bg)', src:'assets/boss/boss3.gif'},
+  {name:'Boss 4 (white bg)', src:'assets/boss/boss4.gif'},
 ];
+// Per-boss base scale: tiny-sprite gifs get auto-enlarged so all look equal at the same %.
+function bossBaseScale(src){
+  if(!src) return 1;
+  const hit=BOSS_CHOICES.find(c=>c.src===src);
+  if(hit && hit.scale) return hit.scale;
+  if(src.indexOf('boss2.gif')>=0) return 2; // same tiny sprite under any name
+  return 1;
+}
 const HERO_CHOICES = [
   {name:'Hero 1', src:'assets/hero/player1.gif'},
   {name:'Hero 2', src:'assets/hero/player2.gif'},
@@ -582,11 +591,13 @@ function applySizes(){
   const arena=$('arena');
   const arenaH=arena?arena.clientHeight||400:400;
   const maxPct=parseInt($('boss-max-pct')?$('boss-max-pct').value:70)||70;
-  const maxPx=Math.round(arenaH*maxPct/100);
+  const capPx=Math.round(arenaH*maxPct/100);
   let bw=260, hw=260;
   if(b){
-    let s=Math.round(200*bossSize/100*bossGrowScale);
-    s=Math.min(s, maxPx); // cap: Boss can never overflow the screen
+    const base=bossBaseScale(b.getAttribute('src')||b.src||selBoss);
+    const manual=Math.round(200*bossSize/100*base); // slider size always respected
+    let s=Math.round(manual*bossGrowScale);        // eating growth only
+    s=Math.min(s, Math.max(capPx, manual)); // cap limits auto-grow, never the manual slider
     b.style.width=s+'px'; b.style.height=s+'px'; bw=s; $('boss').style.width=s+'px';
   }
   if(h){ const s=Math.round(200*heroSize/100); h.style.width=s+'px'; h.style.height=s+'px'; hw=s; $('hero').style.width=s+'px'; }
@@ -1473,7 +1484,7 @@ function renderGallery(){
     const d=document.createElement('div');
     d.className='pick'+(selBoss===c.src?' sel':'');
     d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>';
-    d.onclick=()=>{ selBoss=c.src; $('boss-url').value=''; rememberSetup(); renderGallery(); };
+    d.onclick=()=>{ selBoss=c.src; $('boss-url').value=''; rememberSetup(); renderGallery(); applySizes(); };
     bg.appendChild(d);
   });
   const hg=$('hero-gallery'); hg.innerHTML='';
