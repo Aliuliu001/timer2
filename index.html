@@ -1215,7 +1215,7 @@ function bossGrow(){
   const mySeq=++growBadgeSeq;
   const bossBox=$('boss'), badge=$('status-badge');
   bossBox.classList.add('boss-grow');
-  badge.innerHTML='👹 +'+pct+'% fast '+sec+'s<small id="status-time"></small>';
+  badge.innerHTML='👹 Fast '+sec+'s<small id="status-time"></small>';
   badge.className=''; badge.id='status-badge';
   badge.classList.remove('hidden');
   setTimeout(()=>{
