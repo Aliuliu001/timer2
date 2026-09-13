@@ -24,15 +24,24 @@
   .hidden{display:none !important}
   button{cursor:pointer; font-weight:bold; border:none; border-radius:10px}
 
-  /* ---------- TOP BAR ---------- */
-  #topbar{width:92vw; max-width:none; display:flex; align-items:center; gap:10px; flex-shrink:0}
-  #topbar h1{font-size:18px; margin:0; flex:1}
-  #btn-fullscreen{background:#2c3e50; color:#fff; padding:8px 12px; font-size:13px}
-  #btn-bgm{background:#8e44ad; color:#fff; padding:8px 12px; font-size:16px}
+  /* ---------- TOP BAR (icon-only, compact — space goes to the time bar) ---------- */
+  #topbar{width:92vw; max-width:none; display:flex; align-items:center; gap:6px; flex-shrink:0; min-height:40px}
+  #topbar h1#brand{font-size:16px; margin:0; flex:0 0 auto}
+  body.playing #brand{display:none}
+  #topbar button{padding:6px 10px; font-size:16px; border-radius:10px}
+  #btn-fullscreen{background:#2c3e50; color:#fff}
+  #btn-bgm{background:#8e44ad; color:#fff}
+  #btn-sfx{background:#2c3e50; color:#fff}
+  #btn-sfx{margin-left:auto}
+  #arena-controls{display:flex; gap:6px; align-items:center}
+  #arena-controls .hidden{display:none !important}
+  #btn-pause{background:#f39c12; color:#fff}
+  #btn-resume{background:#3498db; color:#fff}
+  #btn-reset{background:var(--danger); color:#fff}
 
   /* ---------- TABS ---------- */
-  #tabs{display:flex; gap:8px}
-  #tabs button{background:#2c3e50; color:#fff; padding:8px 18px; font-size:14px}
+  #tabs{display:flex; gap:6px}
+  #tabs button{background:#2c3e50; color:#fff; padding:6px 12px; font-size:16px}
   #tabs button.active{background:var(--accent)}
 
   /* ---------- FLAT DESIGN SETTINGS ---------- */
@@ -150,8 +159,6 @@
   .setup-tabs button.active{background:#3498db; color:#fff}
   /* Time bar: never overflow */
   .bossbar-wrap{width:100%; min-width:0}
-  .bossbar-wrap .face{flex-shrink:0}
-  .progress-container{min-width:0; overflow:hidden}
   /* Wide screen (14 inch): 2-column control deck, compact so all fits */
   @media(min-width:1000px){
     #deck{display:grid; grid-template-columns:1fr 1.2fr; gap:8px; padding:8px}
@@ -172,20 +179,23 @@
 
   /* ---------- ARENA SCREEN ---------- */
   #screen-arena{width:92vw; max-width:none; height:calc(100vh - 70px); display:flex; flex-direction:column; gap:6px}
+  /* Big game clock: sits ON the arena background, under the time bar */
   #clock-display{
-    font-size:34px; font-weight:bold; font-family:monospace; text-align:center;
-    background:#fff; color:#222; border-radius:12px; padding:2px 20px; align-self:center;
+    position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:10;
+    font-family:'Press Start 2P',monospace; font-size:64px; font-weight:bold; text-align:center;
+    background:rgba(0,0,0,.55); color:#ffd43b; border:4px solid #ffd43b; border-radius:16px; padding:10px 26px;
+    text-shadow:3px 3px 0 #000; white-space:nowrap;
   }
-  #clock-display.warn{color:#b77900}
-  #clock-display.danger{color:var(--danger); animation:pulse 1s infinite}
-  @keyframes pulse{50%{transform:scale(1.06)}}
+  #clock-display.warn{color:#ffd43b; border-color:#ffd43b}
+  #clock-display.danger{color:#ff6b6b; border-color:#ff6b6b; animation:pulse 1s infinite}
+  @keyframes pulse{50%{transform:translateX(-50%) scale(1.06)}}
 
-  /* RPG boss progress bar */
-  .bossbar-wrap{display:flex; align-items:center; gap:8px}
-  .bossbar-wrap .face{width:44px; height:44px; border-radius:50%; object-fit:cover; background:#fff}
+  /* RPG boss progress bar — time bar sits at the very top, 200% size */
+  .bossbar-wrap{display:flex; align-items:center; gap:8px; order:-1}
+  .bossbar-wrap .face{width:64px; height:64px; border-radius:50%; object-fit:cover; background:#fff; flex-shrink:0}
   .progress-container{
-    flex:1; height:30px; border:5px solid #3d3d3d; border-radius:25px;
-    background:#f4f4f4; padding:3px; position:relative; overflow:visible;
+    flex:1; height:60px; border:5px solid #3d3d3d; border-radius:25px;
+    background:#f4f4f4; padding:3px; position:relative; overflow:hidden; min-width:0;
   }
   .progress-fill{
     height:100%; width:0%; border-radius:12px; position:relative;
@@ -236,8 +246,10 @@
   #judge-row{display:flex; gap:10px}
   #btn-correct{flex:1; background:var(--accent); color:#fff; font-size:24px; padding:16px}
   #btn-wrong{flex:1; background:var(--danger); color:#fff; font-size:24px; padding:16px}
-  #meter-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-  #mana-label{font-weight:bold; font-size:18px; display:flex; align-items:center; gap:6px}
+  /* Control deck: mana row centered, big flames */
+  #meter-row{display:flex; justify-content:center; align-items:center}
+  #mana-label{font-weight:bold; font-size:26px; display:flex; align-items:center; gap:10px}
+  #combo-flames img{width:92px !important; height:92px !important}
   /* combo-banner styled as floating popup in FLAT DESIGN block */
   /* Food row: big icons 250% (atom 110px), fixed height single row, no jump */
   #shop{display:none !important}
@@ -250,7 +262,7 @@
   @media (max-width:640px){
     #shop{grid-template-columns:repeat(3,1fr)}
     .fighter img{width:78px; height:78px}
-    #clock-display{font-size:34px}
+    #clock-display{font-size:44px}
   }
 
   /* ---------- COMBO FLAMES (power_up.gif per correct, not thrown) ---------- */
@@ -360,14 +372,19 @@
 <body>
 
 <div id="topbar">
-  <h1>⏱ Timer Battle</h1>
+  <h1 id="brand">⏱ Timer Battle</h1>
   <button id="btn-sfx" onclick="toggleSfx()" title="Game sounds (throw / munch / gulp)">🔊</button>
   <button id="btn-bgm" onclick="toggleBgm()" title="Background music">🎵</button>
   <div id="tabs">
-    <button id="tab-setup" class="active" onclick="showTab('setup')">Settings</button>
-    <button id="tab-arena" onclick="startArena()">Play</button>
+    <button id="tab-setup" class="active" onclick="showTab('setup')" title="Settings">⚙️</button>
+    <button id="tab-arena" onclick="startArena()" title="Play">▶</button>
   </div>
-  <button id="btn-fullscreen" onclick="toggleFullScreen()">Fullscreen ⛶</button>
+  <div id="arena-controls" class="hidden">
+    <button id="btn-pause" onclick="pauseGame()" title="Pause">⏸</button>
+    <button id="btn-resume" class="hidden" onclick="resumeGame()" title="Resume">▶️</button>
+    <button id="btn-reset" onclick="quitArena()" title="Exit to Settings">⏹</button>
+  </div>
+  <button id="btn-fullscreen" onclick="toggleFullScreen()" title="Fullscreen">⛶</button>
 </div>
 
 <!-- ============ SETUP SCREEN ============ -->
@@ -487,7 +504,6 @@
 
 <!-- ============ ARENA SCREEN (main play: NO cards/questions) ============ -->
 <div id="screen-arena" class="hidden">
-  <div id="clock-display">00:02:00</div>
   <div class="bossbar-wrap">
     <img class="face" id="boss-face" alt="boss">
     <div class="progress-container"><div class="progress-fill" id="progress-fill"></div></div>
@@ -497,6 +513,7 @@
   <div id="arena">
     <div class="bg-layer" id="bg-layer"></div>
     <div class="ground"></div>
+    <div id="clock-display">00:02:00</div>
     <div class="fighter" id="boss"><img id="boss-img" alt="Boss"></div>
     <div class="fighter" id="hero"><img id="hero-img" alt="Hero"></div>
     <div id="projectile" class="hidden">🍔</div>
@@ -519,11 +536,6 @@
     </div>
     <div id="meter-row">
       <div id="mana-label">Mana <span id="combo-flames"><img data-i="0" src="assets/power_up.gif" alt="combo"><img data-i="1" src="assets/power_up.gif" alt="combo"><img data-i="2" src="assets/power_up.gif" alt="combo"><img data-i="3" src="assets/power_up.gif" alt="combo"><img data-i="4" src="assets/power_up.gif" alt="combo"></span></div>
-      <div class="buttons">
-        <button id="btn-pause" class="hidden" onclick="pauseGame()">Pause</button>
-        <button id="btn-resume" class="hidden" onclick="resumeGame()">Resume</button>
-        <button id="btn-reset" onclick="quitArena()">Exit</button>
-      </div>
     </div>
     <!-- SHOP: skill orbs + food cards -->
     <div id="shop"></div>
@@ -783,6 +795,8 @@ function fmt(ms){
 function showTab(which){
   $('screen-setup').classList.toggle('hidden', which!=='setup');
   if(which==='setup') $('screen-arena').classList.add('hidden');
+  document.body.classList.toggle('playing', which!=='setup');
+  if($('arena-controls')) $('arena-controls').classList.toggle('hidden', which==='setup');
   $('tab-setup').classList.toggle('active', which==='setup');
   $('tab-arena').classList.toggle('active', which!=='setup');
 }
@@ -840,6 +854,8 @@ function startArena(){
   $('screen-setup').classList.add('hidden');
   $('screen-arena').classList.remove('hidden');
   $('end-screen').classList.add('hidden');
+  document.body.classList.add('playing');
+  if($('arena-controls')) $('arena-controls').classList.remove('hidden');
   $('btn-pause').classList.remove('hidden');
   $('btn-resume').classList.add('hidden');
   isRunning=true; lastFrameTime=performance.now();
@@ -911,7 +927,7 @@ function triggerEnd(win){
   $('end-screen').classList.remove('hidden');
   playSfx(win?'assets/Win-battle.mp3':'assets/Defeated.mp3');
 }
-function returnToSetup(){ $('end-screen').classList.add('hidden'); showTab('setup'); }
+function returnToSetup(){ $('end-screen').classList.add('hidden'); document.body.classList.remove('playing'); showTab('setup'); }
 
 /* ================= CORRECT / WRONG CORE (all 3 inputs call these) ================= */
 function onCorrect(){
@@ -1447,7 +1463,7 @@ function toggleFullScreen(){
   else document.exitFullscreen();
 }
 document.addEventListener('fullscreenchange', ()=>{
-  $('btn-fullscreen').innerText=document.fullscreenElement?'Exit fullscreen ✖️':'Fullscreen ⛶';
+  $('btn-fullscreen').innerText=document.fullscreenElement?'✖️':'⛶';
 });
 
 // First paint
