@@ -663,12 +663,12 @@ function showPane(name){
 // afterFx: none | ice (🧊 block, cracks open at end) | poison (💀 + green smoke) | fire (🔥 burns) | hearts (💕)
 // gifSec = seconds the eating gif shows (Boss hides) | extraSec = seconds the after-state lasts
 const FOOD_ITEMS = [
-  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, fx:'eat', enabled:true, gifSec:6, extraSec:0, gifUrl:'assets/food/pizza.gif', gifFlip:false, gifRmwhite:true, after:'normal', afterFx:'none', afterImg:''},
+  {id:'pizza',   name:'Pizza', icon:'🍕', price:5, eatSeconds:6, fx:'eat', enabled:true, gifSec:6, extraSec:0, gifUrl:'assets/food/pizza.gif', gifFlip:false, gifRmwhite:true, after:'fast', afterFx:'none', afterImg:''},
   {id:'icecream',name:'Ice Cream', icon:'🍦', price:5, eatSeconds:4, fx:'freeze', enabled:true, gifSec:4, extraSec:3, gifUrl:'assets/food/icecream.gif', gifFlip:false, gifRmwhite:true, after:'stop', afterFx:'ice', afterImg:'assets/food/ice-block.jpg'},
   {id:'mushroom',name:'Mushroom',icon:'🍄', price:5, eatSeconds:5, fx:'poison', enabled:true, gifSec:5, extraSec:3, gifUrl:'assets/food/mushroom.gif', gifFlip:false, gifRmwhite:true, after:'slow', afterFx:'poison', afterImg:''},
   {id:'chili',   name:'Chili',   icon:'🌶️', price:5, eatSeconds:4, fx:'burn', enabled:true, gifSec:4, extraSec:3, gifUrl:'assets/food/chili.gif', gifFlip:false, gifRmwhite:true, after:'fast', afterFx:'fire', afterImg:''},
   {id:'noodles', name:'Noodles', icon:'🍜', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:0, gifUrl:'assets/food/noodles.gif', gifFlip:false, gifRmwhite:true, after:'normal', afterFx:'none', afterImg:''},
-  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:3, gifUrl:'assets/food/teacher.gif', gifFlip:false, gifRmwhite:true, after:'slow', afterFx:'hearts', afterImg:''},
+  {id:'teacher', name:'Teacher', icon:'👩‍🏫', price:5, eatSeconds:5, fx:'eat', enabled:true, gifSec:5, extraSec:3, gifUrl:'assets/food/teacher.gif', gifFlip:false, gifRmwhite:true, after:'fast', afterFx:'hearts', afterImg:''},
 ];
 // Donut-gif settings (remembered).
 const GIF_SET = {
@@ -679,6 +679,19 @@ const GIF_SET = {
 };
 (function restoreDishes(){
   try{
+    // One-time migration (v2): apply new fast/slow defaults — Pizza+Teacher run fast,
+    // Ice freezes 3s, Mushroom slows 3s. Runs once, your later edits still win.
+    if(!localStorage.getItem('timer_foodv2')){
+      const fix={pizza:{after:'fast'}, teacher:{after:'fast'}, icecream:{after:'stop', extraSec:3}, mushroom:{after:'slow', extraSec:3}};
+      let saved=[];
+      try{ saved=JSON.parse(localStorage.getItem('timer_dishes')||'[]'); }catch(e){ saved=[]; }
+      for(const id of Object.keys(fix)){
+        let s=saved.find(x=>x.id===id);
+        if(s) Object.assign(s, fix[id]); else saved.push(Object.assign({id}, fix[id]));
+      }
+      localStorage.setItem('timer_dishes', JSON.stringify(saved));
+      localStorage.setItem('timer_foodv2', '1');
+    }
     const saved=JSON.parse(localStorage.getItem('timer_dishes')||'[]');
     for(const s of saved){
       const f=FOOD_ITEMS.find(x=>x.id===s.id); if(!f) continue;
@@ -824,11 +837,11 @@ function beep(freq, dur, type, vol, when){
   }catch(e){}
 }
 function sfxWhoosh(){ beep(300,0.4,'sawtooth',0.12); beep(600,0.35,'sine',0.1,0.05); }
-function sfxMunch(){ for(let i=0;i<3;i++){ beep(180+Math.random()*80,0.15,'square',0.15,i*0.35); } }
-function sfxGulp(){ beep(250,0.25,'sine',0.2); beep(150,0.35,'sine',0.2,0.22); }
-let munchTimer=null;
-function startMunchLoop(){ stopMunchLoop(); sfxMunch(); munchTimer=setInterval(sfxMunch, 1100); }
-function stopMunchLoop(){ if(munchTimer){ clearInterval(munchTimer); munchTimer=null; } }
+// Real eating sounds (repo mp3, SFX toggle): yummy fires when the eat gif starts,
+// gulp fires exactly when the gif time ends. The extra-look stage plays no eating sound.
+const EAT_SFX = {yummy:new Audio('assets/sfx/eat-yummy.mp3'), gulp:new Audio('assets/sfx/eat-gulp.mp3')};
+function playEatSfx(which){ if(!AUDIO.sfxOn) return; try{ const a=EAT_SFX[which]; a.currentTime=0; a.play().catch(()=>{}); }catch(e){} }
+function stopEatSfx(which){ try{ const a=EAT_SFX[which]; a.pause(); a.currentTime=0; }catch(e){} }
 function toggleSfx(){
   AUDIO.sfxOn=!AUDIO.sfxOn;
   localStorage.setItem('timer_sfx', AUDIO.sfxOn?'1':'0');
@@ -1049,7 +1062,7 @@ function skillIconHtml(f, size){
   const atomCls = 'atom'+(isTeacher?' teacher':'');
   let inner;
   if(isTeacher){
-    inner = '<img src="assets/food/teacher-icon.jpg" style="width:'+size+'px;height:'+size+'px;position:relative;border-radius:50%;object-fit:cover" alt="'+f.name+'">';
+    inner = '<img src="assets/food/teacher-icon.png" style="width:'+size+'px;height:'+size+'px;position:relative;border-radius:50%;object-fit:cover" alt="'+f.name+'">';
   } else if(f.icon.indexOf('assets/')===0){
     inner = '<img src="'+f.icon+'" style="width:'+size+'px;height:'+size+'px;position:relative" alt="'+f.name+'">';
   } else {
@@ -1283,26 +1296,30 @@ function clearFxLayers(){
   document.querySelectorAll('.fire-aura').forEach(e=>e.remove());
   const b=$('boss'); if(b) b.classList.remove('burning','tint-blue','tint-fire','boss-stun','boss-shake-strong','boss-grow');
 }
-// Boss skill: after eating, grows +% size + runs fast X sec, with glow rings.
-// The grow badge auto-hides, and old hide-timers can't stick on screen when a new meal starts.
-function bossGrow(){
+// Boss skill: after eating, grows +% size. Runs fast ONLY if the eaten dish
+// itself sets after:'fast' — extra-look dishes (ice/poison/fire/hearts) keep
+// their own state and are never force-sped.
+function bossGrow(f){
   const pct=parseInt($('boss-grow-pct').value)||10;
-  const sec=parseInt(($('boss-fast-sec')&&$('boss-fast-sec').value)||localStorage.getItem('timer_fastSec')||5)||5;
   bossGrowScale*= (1+pct/100);
-  bossFastUntil=performance.now()+sec*1000;
   applySizes();
-  const mySeq=++growBadgeSeq;
-  const bossBox=$('boss'), badge=$('status-badge');
-  bossBox.classList.add('boss-grow');
-  badge.innerHTML='👹 Fast<small id="status-time"></small>';
-  badge.className=''; badge.id='status-badge';
-  badge.classList.remove('hidden');
-  setTimeout(()=>{
-    if(mySeq!==growBadgeSeq) return; // a newer meal took over — leave its badge alone
-    bossBox.classList.remove('boss-grow');
-    if(bossEating) return;           // next dish already started — its own badge is showing
-    badge.classList.add('hidden');
-  }, sec*1000);
+  if(f && f.after==='fast'){
+    const sec=parseInt(($('boss-fast-sec')&&$('boss-fast-sec').value)||localStorage.getItem('timer_fastSec')||5)||5;
+    bossFastUntil=performance.now()+sec*1000;
+    applySizes();
+    const mySeq=++growBadgeSeq;
+    const bossBox=$('boss'), badge=$('status-badge');
+    bossBox.classList.add('boss-grow');
+    badge.innerHTML='👹 Fast<small id="status-time"></small>';
+    badge.className=''; badge.id='status-badge';
+    badge.classList.remove('hidden');
+    setTimeout(()=>{
+      if(mySeq!==growBadgeSeq) return; // a newer meal took over — leave its badge alone
+      bossBox.classList.remove('boss-grow');
+      if(bossEating) return;           // next dish already started — its own badge is showing
+      badge.classList.add('hidden');
+    }, sec*1000);
+  }
 }
 function applyFood(id){
   const f=FOOD_ITEMS.find(x=>x.id===id); if(!f) return;
@@ -1337,7 +1354,10 @@ function throwFood(f, free){
   bossEating=true;
   sfxWhoosh();
   const g=castGeom(), proj=$('projectile');
-  proj.className=''; proj.innerHTML='<span class="fly-icon">'+f.icon+'</span>';
+  proj.className='';
+  proj.innerHTML = (f.id==='teacher')
+    ? '<span class="fly-icon"><img src="assets/food/teacher-icon.png" style="width:110px;height:110px;border-radius:50%;object-fit:cover"></span>'
+    : '<span class="fly-icon">'+f.icon+'</span>';
   proj.style.position='absolute'; proj.style.top=g.top+'px';
   proj.classList.remove('hidden'); proj.style.transition='none'; proj.style.left=g.heroX+'px';
   // arc flight at HALF speed: 1200ms, quadratic curve Hero -> Boss, peak lifted 130px
@@ -1360,7 +1380,7 @@ function throwFood(f, free){
     const gifSec=f.gifSec||f.eatSeconds, extraSec=f.extraSec||0;
     // STAGE 1: gif shows (Boss hides) + frame takes dish colour + live FX at Boss spot right away
     showEatFrame(dishGifSrc(f), f.gifFlip, f.gifRmwhite, f.fx); // Boss hides, gif in round frame with dish colour
-    startMunchLoop();
+    playEatSfx('yummy');
     if(f.fx==='burn'){ showFireAura(bossBox, gifSec*1000); }
     else if(f.fx==='freeze'){ showSnow(gifSec*1000); }
     else if(f.fx==='poison'){ showPoisonCloud(bossBox, gifSec*1000); }
@@ -1373,12 +1393,12 @@ function throwFood(f, free){
     badge.classList.remove('hidden');
     updateMeters(); renderShop();
     setTimeout(()=>{
-      hideEatFrame(); stopMunchLoop(); sfxGulp();
+      hideEatFrame(); stopEatSfx('yummy'); playEatSfx('gulp');
       // STAGE 2: Boss back in its after-state for extraSec (per-dish setting).
       // after: normal | stop (trapped) | slow | fast — afterFx: none | ice | poison | fire | hearts
       const t2=performance.now(), dur=(extraSec>0?extraSec:2.5)*1000;
       applyAfterState(f, t2);
-      bossGrow();
+      bossGrow(f);
       setTimeout(()=>{ clearAfterState(f); bossEating=false; serveNextInQueue(); }, Math.max(extraSec*1000, 2500));
     }, gifSec*1000);
   }, 1250); // flight 1200ms + margin
@@ -1489,12 +1509,12 @@ function throwRandomFood(){
     proj.classList.add('hidden'); proj.style.transition='';
     const badge=$('status-badge');
     showEatFrame(donutGifSrc(), GIF_SET.donutFlip, GIF_SET.donutRmwhite, 'donut');
-    startMunchLoop();
+    playEatSfx('yummy');
     bossFrozenUntil=performance.now()+3000;
     badge.innerHTML='🍩 Donut!<small id="status-time"></small>';
     badge.className=''; badge.id='status-badge';
     badge.classList.remove('hidden');
-    setTimeout(()=>{ hideEatFrame(); stopMunchLoop(); sfxGulp(); bossGrow(); bossEating=false; serveNextInQueue(); }, 3000);
+    setTimeout(()=>{ hideEatFrame(); stopEatSfx('yummy'); playEatSfx('gulp'); bossGrow({after:'fast'}); bossEating=false; serveNextInQueue(); }, 3000);
   }, 1250);
 }
 
