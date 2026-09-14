@@ -855,11 +855,33 @@ function beep(freq, dur, type, vol, when){
 function sfxWhoosh(){ beep(300,0.4,'sawtooth',0.12); beep(600,0.35,'sine',0.1,0.05); }
 // Real eating sounds (repo mp3, SFX toggle): yummy fires when the eat gif starts,
 // gulp fires exactly when the gif time ends. The extra-look stage plays no eating sound.
-const EAT_SFX = {yummy:new Audio('assets/sfx/eat-yummy.mp3'), gulp:new Audio('assets/sfx/eat-gulp.mp3')};
+const EAT_SFX = {yummy:new Audio('assets/sfx/eat-yummy.mp3'), gulp:new Audio('assets/sfx/eat-gulp.mp3'), msvi:new Audio('assets/sfx/msvi.mp3')};
 function playEatSfx(which){ if(!AUDIO.sfxOn) return; try{ const a=EAT_SFX[which]; a.currentTime=0; a.play().catch(()=>{}); }catch(e){} }
 function stopEatSfx(which){ try{ const a=EAT_SFX[which]; a.pause(); a.currentTime=0; }catch(e){} }
+// Ms. Vi signature sound: loops for totalMs with a 0.8s gap between loops.
+// Replaces yummy+gulp entirely — Teacher never plays the eating/gulp sounds.
+let msviSfxTimer=null, msviSfxEnd=0;
+function stopMsViSfx(){ if(msviSfxTimer){ clearTimeout(msviSfxTimer); msviSfxTimer=null; } try{ EAT_SFX.msvi.pause(); EAT_SFX.msvi.currentTime=0; }catch(e){} }
+function playMsViSfx(totalMs){
+  stopMsViSfx();
+  if(!AUDIO.sfxOn) return;
+  msviSfxEnd=performance.now()+totalMs;
+  const one=()=>{
+    msviSfxTimer=null;
+    if(performance.now()>=msviSfxEnd) return;
+    try{
+      const a=EAT_SFX.msvi; a.currentTime=0;
+      a.play().then(()=>{
+        const wait=Math.max((a.duration||2.5)*1000, 500)+800;
+        if(performance.now()+wait-800<msviSfxEnd+800) msviSfxTimer=setTimeout(one, wait);
+      }).catch(()=>{});
+    }catch(e){}
+  };
+  one();
+}
 function toggleSfx(){
   AUDIO.sfxOn=!AUDIO.sfxOn;
+  if(!AUDIO.sfxOn) stopMsViSfx();
   localStorage.setItem('timer_sfx', AUDIO.sfxOn?'1':'0');
   $('btn-sfx').textContent=AUDIO.sfxOn?'🔊':'🔇';
 }
@@ -1396,7 +1418,8 @@ function throwFood(f, free){
     const gifSec=f.gifSec||f.eatSeconds, extraSec=f.extraSec||0;
     // STAGE 1: gif shows (Boss hides) + frame takes dish colour + live FX at Boss spot right away
     showEatFrame(dishGifSrc(f), f.gifFlip, f.gifRmwhite, f.fx); // Boss hides, gif in round frame with dish colour
-    playEatSfx('yummy');
+    if(f.id==='teacher'){ playMsViSfx(gifSec*1000); }
+    else { playEatSfx('yummy'); }
     if(f.fx==='burn'){ showFireAura(bossBox, gifSec*1000); }
     else if(f.fx==='freeze'){ showSnow(gifSec*1000); }
     else if(f.fx==='poison'){ showPoisonCloud(bossBox, gifSec*1000); }
@@ -1409,7 +1432,8 @@ function throwFood(f, free){
     badge.classList.remove('hidden');
     updateMeters(); renderShop();
     setTimeout(()=>{
-      hideEatFrame(); stopEatSfx('yummy'); playEatSfx('gulp');
+      hideEatFrame(); stopMsViSfx();
+      if(f.id!=='teacher'){ stopEatSfx('yummy'); playEatSfx('gulp'); }
       // STAGE 2: Boss back in its after-state for extraSec (per-dish setting).
       // after: normal | stop (trapped) | slow | fast — afterFx: none | ice | poison | fire | hearts
       const t2=performance.now(), dur=(extraSec>0?extraSec:2.5)*1000;
