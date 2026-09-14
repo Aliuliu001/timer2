@@ -323,19 +323,20 @@
   .food-card{background:transparent; border:none}
   .skill-orb .sname,.food-card .sname{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .skill-orb .mcost,.food-card .mcost{font-size:20px; font-weight:bold; color:var(--gold); flex-shrink:0; text-shadow:1px 1px 0 #000}
-  /* 3D atom: icon is the nucleus. Each tilted orbit is seen edge-on so its
-     front half passes IN FRONT of the icon and its back half BEHIND it.
-     The electron dot rides ON the orbit (never hidden behind the backdrop). */
+  /* 3D atom: icon is the nucleus. 3 CONCENTRIC orbits, each tilted in its OWN
+     plane (flat / upright / diagonal — like a universe symbol). Front half of
+     each orbit passes IN FRONT of the icon, back half BEHIND it.
+     Each orbit carries its OWN electron dot riding on it. */
   .skill-orb .atom,.food-card .atom{position:relative; width:58px; height:58px; flex-shrink:0; display:flex; align-items:center; justify-content:center; perspective:300px; transform-style:preserve-3d}
   .skill-orb .atom img,.food-card .atom img{object-fit:contain; position:absolute; z-index:2; transform:translateZ(14px)}
   .skill-orb .atom .ficon,.food-card .atom .ficon{position:relative; z-index:2; line-height:1; transform:translateZ(14px)}
   .atom .ring{position:absolute; inset:-6px; border-radius:50%; transform-style:preserve-3d; pointer-events:none}
-  .atom .ring.r1{border:2px solid rgba(123,97,255,.9); animation:orbSpin1 3s linear infinite}
-  .atom .ring.r2{border:2px solid rgba(0,229,255,.9); animation:orbSpin2 2.2s linear infinite}
-  .atom .ring.r3{border:2px solid rgba(255,223,94,.9); animation:orbSpin3 1.6s linear infinite}
-  @keyframes orbSpin1{from{transform:rotateX(72deg) rotateZ(0deg)} to{transform:rotateX(72deg) rotateZ(360deg)}}
-  @keyframes orbSpin2{from{transform:rotateX(72deg) rotateZ(120deg)} to{transform:rotateX(72deg) rotateZ(480deg)}}
-  @keyframes orbSpin3{from{transform:rotateX(72deg) rotateZ(240deg)} to{transform:rotateX(72deg) rotateZ(600deg)}}
+  .atom .ring.r1{border:2px solid rgba(123,97,255,.9); animation:orbFlat 3s linear infinite}
+  .atom .ring.r2{border:2px solid rgba(0,229,255,.9); animation:orbUp 2.2s linear infinite}
+  .atom .ring.r3{border:2px solid rgba(255,223,94,.9); animation:orbDiag 1.6s linear infinite}
+  @keyframes orbFlat{from{transform:rotateX(75deg) rotateZ(0deg)} to{transform:rotateX(75deg) rotateZ(360deg)}}
+  @keyframes orbUp{from{transform:rotateX(75deg) rotateY(60deg) rotateZ(0deg)} to{transform:rotateX(75deg) rotateY(60deg) rotateZ(360deg)}}
+  @keyframes orbDiag{from{transform:rotateX(75deg) rotateY(-60deg) rotateZ(0deg)} to{transform:rotateX(75deg) rotateY(-60deg) rotateZ(360deg)}}
   .atom .ring::after{content:''; position:absolute; width:10px; height:10px; border-radius:50%; top:-7px; left:50%; margin-left:-5px; box-shadow:0 0 8px currentColor; z-index:3}
   .atom .ring.r1::after{background:#00e5ff; color:#00e5ff}
   .atom .ring.r2::after{background:#ffdf5e; color:#ffdf5e}
@@ -432,7 +433,7 @@
   <fieldset>
     <legend>Boss (left) — tick to pick 1 image</legend>
     <label>Paste new Boss link: <input type="text" id="boss-url" placeholder="https://..."></label>
-    <div class="row"><button class="btn-add" onclick="addBossLink()">+ Add Boss</button><button class="btn-clear" onclick="resetBoss()">Reset</button><span style="font-size:13px;color:#5c4a3a">No limit — saved, survives refresh</span></div>
+    <div class="row"><button class="btn-add" onclick="addBossLink()">+ Add Boss</button><button class="btn-add" onclick="$('boss-file').click()">📁 Upload</button><input type="file" id="boss-file" accept="image/*,.gif" style="display:none" onchange="addBossFile(this)"><button class="btn-clear" onclick="resetBoss()">Reset</button><span style="font-size:13px;color:#5c4a3a">No limit — saved, survives refresh</span></div>
     <div class="gallery" id="boss-gallery"></div>
     <div class="flip-row"><button onclick="toggleFlip('boss')">⇋ Flip Boss (face right)</button><span id="boss-flip-state">State: on (faces right)</span></div>
     <div class="size-row">Boss size: <input type="range" id="boss-size" min="50" max="300" value="100" oninput="setSize('boss')"><span id="boss-size-val">100%</span></div>
@@ -445,7 +446,7 @@
   <fieldset>
     <legend>Hero (right) — tick to pick 1 image</legend>
     <label>Paste new Hero link: <input type="text" id="hero-url" placeholder="https://..."></label>
-    <div class="row"><button class="btn-add" onclick="addHeroLink()">+ Add Player</button><button class="btn-clear" onclick="resetHero()">Reset</button><span style="font-size:13px;color:#5c4a3a">No limit — saved, survives refresh</span></div>
+    <div class="row"><button class="btn-add" onclick="addHeroLink()">+ Add Player</button><button class="btn-add" onclick="$('hero-file').click()">📁 Upload</button><input type="file" id="hero-file" accept="image/*,.gif" style="display:none" onchange="addHeroFile(this)"><button class="btn-clear" onclick="resetHero()">Reset</button><span style="font-size:13px;color:#5c4a3a">No limit — saved, survives refresh</span></div>
     <div class="gallery" id="hero-gallery"></div>
     <div class="flip-row"><button onclick="toggleFlip('hero')">⇋ Flip Hero</button><span id="hero-flip-state">State: off</span></div>
     <div class="size-row">Hero size: <input type="range" id="hero-size" min="50" max="300" value="100" oninput="setSize('hero')"><span id="hero-size-val">100%</span></div>
@@ -1666,6 +1667,33 @@ function resetHero(){
   HERO_CHOICES.push(...HERO_DEFAULTS.filter(s=>!HERO_CHOICES.some(c=>c.src===s)).map(s=>({name:'Hero', src:s})));
   if(!HERO_CHOICES.some(c=>c.src===selHero)) selHero=HERO_CHOICES[0].src;
   saveCustomFighters(); rememberSetup(); renderGallery();
+}
+// Upload image/gif from your laptop (max 2MB). Stored in this browser, survives refresh.
+function addBossFile(input){
+  const f=input.files&&input.files[0]; input.value='';
+  if(!f) return;
+  if(f.size>2*1024*1024){ alert('File is over 2MB — pick a smaller gif/image!'); return; }
+  const r=new FileReader();
+  r.onload=()=>{
+    const src=r.result;
+    if(BOSS_CHOICES.some(c=>c.src===src)){ selBoss=src; rememberSetup(); renderGallery(); applySizes(); return; }
+    BOSS_CHOICES.push({name:'My Boss', src, custom:true});
+    selBoss=src; saveCustomFighters(); rememberSetup(); renderGallery(); applySizes();
+  };
+  r.readAsDataURL(f);
+}
+function addHeroFile(input){
+  const f=input.files&&input.files[0]; input.value='';
+  if(!f) return;
+  if(f.size>2*1024*1024){ alert('File is over 2MB — pick a smaller gif/image!'); return; }
+  const r=new FileReader();
+  r.onload=()=>{
+    const src=r.result;
+    if(HERO_CHOICES.some(c=>c.src===src)){ selHero=src; rememberSetup(); renderGallery(); return; }
+    HERO_CHOICES.push({name:'My Player', src, custom:true});
+    selHero=src; saveCustomFighters(); rememberSetup(); renderGallery();
+  };
+  r.readAsDataURL(f);
 }
 function toggleFlip(who){
   if(who==='boss'){ flipBoss=!flipBoss; $('boss-flip-state').textContent='State: '+(flipBoss?'on (faces right)':'off (faces left)'); $('boss').classList.toggle('mirrored', flipBoss); }
