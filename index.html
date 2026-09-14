@@ -314,15 +314,17 @@
   #food-pick .food-card label{font-size:14px; margin-top:2px}
   #food-pick .food-card input[type=checkbox]{width:22px; height:22px}
   .skill-orb,.food-card{
-    flex:1 1 0; min-width:96px; display:flex; align-items:center; gap:6px;
+    flex:1 1 0; min-width:96px; display:flex; align-items:center; justify-content:flex-start; gap:8px;
     background:transparent; color:#222; border-radius:12px; padding:6px 2px;
     font-size:11px; border:none; cursor:pointer; pointer-events:auto;
   }
   #deck .skill-orb{color:#fff}
   #deck .food-card{color:#fff}
   .food-card{background:transparent; border:none}
-  .skill-orb .sname,.food-card .sname{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .skill-orb .mcost,.food-card .mcost{font-size:20px; font-weight:bold; color:var(--gold); flex-shrink:0; text-shadow:1px 1px 0 #000}
+  /* Mana sits right under its skill name (one compact caption), never drifting to the next skill */
+  .skill-orb .scap,.food-card .scap{display:flex; flex-direction:column; align-items:flex-start; gap:2px; line-height:1.15; min-width:0}
+  .skill-orb .sname,.food-card .sname{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px}
+  .skill-orb .mcost,.food-card .mcost{font-size:14px; font-weight:bold; color:#3a2b00; background:var(--gold); border-radius:999px; padding:1px 9px; flex-shrink:0; box-shadow:1px 1px 0 rgba(0,0,0,.55)}
   /* 3D atom: icon is the nucleus. 3 CONCENTRIC orbits, each tilted in its OWN
      plane (flat / upright / diagonal — like a universe symbol). Front half of
      each orbit passes IN FRONT of the icon, back half BEHIND it.
@@ -860,10 +862,25 @@ function playEatSfx(which){ if(!AUDIO.sfxOn) return; try{ const a=EAT_SFX[which]
 function stopEatSfx(which){ try{ const a=EAT_SFX[which]; a.pause(); a.currentTime=0; }catch(e){} }
 // Ms. Vi signature sound: loops for totalMs with a 0.8s gap between loops.
 // Replaces yummy+gulp entirely — Teacher never plays the eating/gulp sounds.
-let msviSfxTimer=null, msviSfxEnd=0;
-function stopMsViSfx(){ if(msviSfxTimer){ clearTimeout(msviSfxTimer); msviSfxTimer=null; } try{ EAT_SFX.msvi.pause(); EAT_SFX.msvi.currentTime=0; }catch(e){} }
+let msviSfxTimer=null, msviSfxEnd=0, msviFadeTimer=null;
+function stopMsViSfx(immediate){
+  if(msviSfxTimer){ clearTimeout(msviSfxTimer); msviSfxTimer=null; }
+  if(msviFadeTimer){ clearInterval(msviFadeTimer); msviFadeTimer=null; }
+  const a=EAT_SFX.msvi;
+  try{
+    if(immediate||!a||a.paused){ a.pause(); a.currentTime=0; a.volume=1; return; }
+    // Fade out ~0.8s instead of cutting off mid-word
+    const steps=8, stepMs=100, v0=(typeof a.volume==='number'&&a.volume>0)?a.volume:1;
+    let n=0;
+    msviFadeTimer=setInterval(()=>{
+      n++;
+      try{ a.volume=Math.max(0, v0*(1-n/steps)); }catch(e){}
+      if(n>=steps){ clearInterval(msviFadeTimer); msviFadeTimer=null; try{ a.pause(); a.currentTime=0; a.volume=1; }catch(e){} }
+    }, stepMs);
+  }catch(e){}
+}
 function playMsViSfx(totalMs){
-  stopMsViSfx();
+  stopMsViSfx(true);
   if(!AUDIO.sfxOn) return;
   msviSfxEnd=performance.now()+totalMs;
   const one=()=>{
@@ -881,7 +898,7 @@ function playMsViSfx(totalMs){
 }
 function toggleSfx(){
   AUDIO.sfxOn=!AUDIO.sfxOn;
-  if(!AUDIO.sfxOn) stopMsViSfx();
+  if(!AUDIO.sfxOn) stopMsViSfx(true);
   localStorage.setItem('timer_sfx', AUDIO.sfxOn?'1':'0');
   $('btn-sfx').textContent=AUDIO.sfxOn?'🔊':'🔇';
 }
@@ -1115,7 +1132,7 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='skill-orb '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,30)+'<div class="sname">'+f.name+'</div><div class="mcost">'+f.price+'</div>';
+    d.innerHTML=skillIconHtml(f,30)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost">'+f.price+' ⚡</div></div>';
     d.title=f.name+' ('+f.price+' mana)';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
     d.onclick=(function(id){ return function(){ castSkill(id,false); }; })(f.id);
@@ -1128,7 +1145,7 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='food-card '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,64)+'<div class="sname">'+f.name+'</div><div class="mcost">'+(f.price||5)+' ⚡</div>';
+    d.innerHTML=skillIconHtml(f,64)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost">'+(f.price||5)+' ⚡</div></div>';
     d.title=f.name+' ('+(f.price||5)+' mana) — Boss sits and eats '+f.eatSeconds+'s';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
     d.onclick=(function(id){ return function(){ applyFood(id); }; })(f.id);
