@@ -893,7 +893,7 @@ function sfxCorrect(){ beep(660,0.12,'sine',0.25); beep(990,0.2,'sine',0.25,0.1)
 function sfxWrong(){ beep(180,0.25,'sawtooth',0.2); beep(120,0.3,'square',0.12,0.06); }
 // Real eating sounds (repo mp3, SFX toggle): yummy fires when the eat gif starts,
 // gulp fires exactly when the gif time ends. The extra-look stage plays no eating sound.
-const EAT_SFX = {yummy:new Audio('assets/sfx/eat-yummy.mp3'), gulp:new Audio('assets/sfx/eat-gulp.mp3'), msvi:new Audio('assets/sfx/msvi.mp3')};
+const EAT_SFX = {yummy:new Audio('assets/sfx/eat-yummy.mp3'), gulp:new Audio('assets/sfx/eat-gulp.mp3'), msvi:new Audio('assets/sfx/msvi.mp3'), msviThrow:new Audio('assets/sfx/msvi-throw.mp3')};
 function playEatSfx(which){ if(!AUDIO.sfxOn) return; try{ const a=EAT_SFX[which]; a.currentTime=0; a.play().catch(()=>{}); }catch(e){} }
 function stopEatSfx(which){ try{ const a=EAT_SFX[which]; a.pause(); a.currentTime=0; }catch(e){} }
 // Yummy loop: repeats with 0.8s gap until the eat gif ends, then caller plays gulp
@@ -1498,7 +1498,8 @@ function spawnTrail(x, y, fx){
 function throwFood(f, free){
   foodsEaten++;
   bossEating=true;
-  sfxWhoosh();
+  if(f.id==='teacher') playEatSfx('msviThrow');
+  else sfxWhoosh();
   const g=castGeom(), proj=$('projectile');
   proj.className='';
   proj.innerHTML = (f.id==='teacher')
