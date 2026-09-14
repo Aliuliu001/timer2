@@ -117,9 +117,9 @@
   .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center}
   .time-inputs{display:flex; gap:15px; justify-content:center; margin-bottom:12px}
   .time-inputs div{display:flex; flex-direction:column; align-items:center}
-  .time-inputs input{width:64px; height:42px; font-size:22px; text-align:center; border:2px solid #ccc; border-radius:8px; font-weight:bold}
-  .time-inputs label{margin-top:5px; font-size:13px; font-weight:bold; color:#555}
-  .preset button{background:#ecf0f1; color:#222; padding:8px 12px; margin:2px}
+  .time-inputs input{width:96px; height:64px; font-size:32px; text-align:center; border:3px solid #5c4a3a; border-radius:12px; font-weight:bold; background:#fff}
+  .time-inputs label{margin-top:6px; font-size:16px; font-weight:bold; color:#5c4a3a}
+  .preset button{background:#ecf0f1; color:#222; padding:14px 26px; margin:4px; font-size:18px; font-weight:bold}
   .preset button.active{background:#3498db; color:#fff}
   .buttons button{padding:10px 20px; font-size:14px; margin:4px}
   #btn-start{background:var(--accent); color:#fff}
@@ -181,20 +181,20 @@
   #screen-arena{width:92vw; max-width:none; height:calc(100vh - 70px); display:flex; flex-direction:column; gap:6px}
   /* Big game clock: sits ON the arena background, under the time bar */
   #clock-display{
-    position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:10;
-    font-family:'Press Start 2P',monospace; font-size:64px; font-weight:bold; text-align:center;
-    background:rgba(0,0,0,.55); color:#ffd43b; border:4px solid #ffd43b; border-radius:16px; padding:10px 26px;
-    text-shadow:3px 3px 0 #000; white-space:nowrap;
+    position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:60;
+    font-family:'Press Start 2P',monospace; font-size:44px; font-weight:bold; text-align:center;
+    background:#fff; color:#5C4A3A; border:5px solid #ffd43b; border-radius:16px; padding:8px 20px;
+    text-shadow:none; white-space:nowrap; box-shadow:0 4px 18px rgba(0,0,0,.45);
   }
-  #clock-display.warn{color:#ffd43b; border-color:#ffd43b}
+  #clock-display.warn{color:#b8860b; border-color:#ffd43b}
   #clock-display.danger{color:#ff6b6b; border-color:#ff6b6b; animation:pulse 1s infinite}
   @keyframes pulse{50%{transform:translateX(-50%) scale(1.06)}}
 
   /* RPG boss progress bar — time bar sits at the very top, 200% size */
   .bossbar-wrap{display:flex; align-items:center; gap:8px; order:-1}
-  .bossbar-wrap .face{width:64px; height:64px; border-radius:50%; object-fit:cover; background:#fff; flex-shrink:0}
+  .bossbar-wrap .face{width:44px; height:44px; border-radius:50%; object-fit:cover; background:#fff; flex-shrink:0}
   .progress-container{
-    flex:1; height:60px; border:5px solid #3d3d3d; border-radius:25px;
+    flex:1; height:40px; border:4px solid #3d3d3d; border-radius:18px;
     background:#f4f4f4; padding:3px; position:relative; overflow:hidden; min-width:0;
   }
   .progress-fill{
@@ -244,25 +244,25 @@
     display:flex; flex-direction:column; gap:10px;
   }
   #judge-row{display:flex; gap:10px}
-  #btn-correct{flex:1; background:var(--accent); color:#fff; font-size:24px; padding:16px}
-  #btn-wrong{flex:1; background:var(--danger); color:#fff; font-size:24px; padding:16px}
+  #btn-correct{flex:1; background:var(--accent); color:#fff; font-size:18px; padding:10px}
+  #btn-wrong{flex:1; background:var(--danger); color:#fff; font-size:18px; padding:10px}
   /* Control deck: mana row centered, big flames */
   #meter-row{display:flex; justify-content:center; align-items:center}
-  #mana-label{font-weight:bold; font-size:26px; display:flex; align-items:center; gap:10px}
-  #combo-flames img{width:92px !important; height:92px !important}
+  #mana-label{font-weight:bold; font-size:18px; display:flex; align-items:center; gap:8px}
+  #combo-flames img{width:62px !important; height:62px !important}
   /* combo-banner styled as floating popup in FLAT DESIGN block */
   /* Food row: big icons 250% (atom 110px), fixed height single row, no jump */
   #shop{display:none !important}
-  #food-shop{display:flex; gap:14px; margin-top:6px; overflow-x:scroll; overflow-y:hidden; height:170px; min-height:170px; max-height:170px; align-items:center; padding:6px 4px; scrollbar-gutter:stable both-edges}
+  #food-shop{display:flex; gap:10px; margin-top:4px; overflow-x:scroll; overflow-y:hidden; height:120px; min-height:120px; max-height:120px; align-items:center; padding:4px; scrollbar-gutter:stable both-edges}
   #food-shop::-webkit-scrollbar{height:8px; background:#eee}
   #food-shop::-webkit-scrollbar-thumb{background:#b08968; border-radius:4px}
-  #food-shop .food-card{min-width:150px; font-size:14px}
-  #food-shop .atom{width:110px !important; height:110px !important}
-  #food-shop .mcost{font-size:28px !important}
+  #food-shop .food-card{min-width:110px; font-size:12px}
+  #food-shop .atom{width:74px !important; height:74px !important}
+  #food-shop .mcost{font-size:19px !important}
   @media (max-width:640px){
     #shop{grid-template-columns:repeat(3,1fr)}
     .fighter img{width:78px; height:78px}
-    #clock-display{font-size:44px}
+    #clock-display{font-size:32px}
   }
 
   /* ---------- COMBO FLAMES (power_up.gif per correct, not thrown) ---------- */
@@ -338,6 +338,14 @@
   .atom .ring.r1::after{background:#00e5ff; color:#00e5ff}
   .atom .ring.r2::after{background:#ffdf5e; color:#ffdf5e}
   .atom .ring.r3::after{background:#ff6b9d; color:#ff6b9d}
+  /* Teacher unique atom: fire + water + electric orbits, full 360 spin */
+  .atom.teacher .ring{border-width:3px}
+  .atom.teacher .ring.r1{border-color:rgba(255,110,0,.95); box-shadow:0 0 10px rgba(255,110,0,.7)}
+  .atom.teacher .ring.r2{border-color:rgba(0,150,255,.95); box-shadow:0 0 10px rgba(0,150,255,.7)}
+  .atom.teacher .ring.r3{border-color:rgba(255,220,0,.95); box-shadow:0 0 10px rgba(255,220,0,.8)}
+  .atom.teacher .ring.r1::after{background:#ff6b00; color:#ff6b00}
+  .atom.teacher .ring.r2::after{background:#0096ff; color:#0096ff}
+  .atom.teacher .ring.r3::after{background:#ffe600; color:#ffe600}
   @keyframes spin{to{transform:rotate(360deg)}}
   .skill-orb.ready{box-shadow:0 0 12px rgba(123,97,255,.9); background:#241b5e}
   .skill-orb.locked{opacity:.55}
@@ -425,7 +433,7 @@
     <div class="row"><button class="btn-add" onclick="addBossLink()">+ Add Boss</button><span style="font-size:13px;color:#5c4a3a">Max 5 — saved, survives refresh</span></div>
     <div class="gallery" id="boss-gallery"></div>
     <div class="flip-row"><button onclick="toggleFlip('boss')">⇋ Flip Boss (face right)</button><span id="boss-flip-state">State: on (faces right)</span></div>
-    <div class="size-row">Boss size: <input type="range" id="boss-size" min="50" max="300" value="130" oninput="setSize('boss')"><span id="boss-size-val">130%</span></div>
+    <div class="size-row">Boss size: <input type="range" id="boss-size" min="50" max="300" value="100" oninput="setSize('boss')"><span id="boss-size-val">100%</span></div>
     <label>Fast time after eating (sec): <input type="number" id="boss-fast-sec" value="5" min="1" max="30" style="width:70px" onchange="localStorage.setItem('timer_fastSec',this.value)"></label>
     <label><input type="checkbox" id="boss-rmwhite" checked> Remove white Boss background (if any)</label>
   </fieldset>
@@ -438,7 +446,7 @@
     <div class="row"><button class="btn-add" onclick="addHeroLink()">+ Add Player</button><span style="font-size:13px;color:#5c4a3a">Max 5 — saved, survives refresh</span></div>
     <div class="gallery" id="hero-gallery"></div>
     <div class="flip-row"><button onclick="toggleFlip('hero')">⇋ Flip Hero</button><span id="hero-flip-state">State: off</span></div>
-    <div class="size-row">Hero size: <input type="range" id="hero-size" min="50" max="300" value="130" oninput="setSize('hero')"><span id="hero-size-val">130%</span></div>
+    <div class="size-row">Hero size: <input type="range" id="hero-size" min="50" max="300" value="100" oninput="setSize('hero')"><span id="hero-size-val">100%</span></div>
   </fieldset>
   </div>
   <div class="setup-pane hidden" id="sp-food">
@@ -597,15 +605,15 @@ function saveCustomFighters(){
 let selBoss = localStorage.getItem('timer_selBoss') || BOSS_CHOICES[0].src;
 let selHero = localStorage.getItem('timer_selHero') || HERO_CHOICES[0].src;
 let flipBoss = localStorage.getItem('timer_flipBoss')!=='0', flipHero = localStorage.getItem('timer_flipHero')==='1';
-let bossSize = parseInt(localStorage.getItem('timer_bossSize'))||130, heroSize = parseInt(localStorage.getItem('timer_heroSize'))||130;
+let bossSize = parseInt(localStorage.getItem('timer_bossSize'))||100, heroSize = parseInt(localStorage.getItem('timer_heroSize'))||100;
 function rememberSetup(){
   localStorage.setItem('timer_selBoss', selBoss); localStorage.setItem('timer_selHero', selHero);
   localStorage.setItem('timer_flipBoss', flipBoss?'1':'0'); localStorage.setItem('timer_flipHero', flipHero?'1':'0');
   localStorage.setItem('timer_bossSize', bossSize); localStorage.setItem('timer_heroSize', heroSize);
 }
 function setSize(who){
-  if(who==='boss'){ bossSize=parseInt($('boss-size').value)||130; $('boss-size-val').textContent=bossSize+'%'; }
-  else { heroSize=parseInt($('hero-size').value)||130; $('hero-size-val').textContent=heroSize+'%'; }
+  if(who==='boss'){ bossSize=parseInt($('boss-size').value)||100; $('boss-size-val').textContent=bossSize+'%'; }
+  else { heroSize=parseInt($('hero-size').value)||100; $('hero-size-val').textContent=heroSize+'%'; }
   rememberSetup(); applySizes();
 }
 function applySizes(){
@@ -1036,10 +1044,18 @@ function skillIconHtml(f, size){
   size = size||30;
   // Icon is flex-centered (CSS) so it always sits at the atom centre;
   // rings are absolutely positioned around it and rotate through 2 crossing points.
-  const inner = (f.icon.indexOf('assets/')===0)
-    ? '<img src="'+f.icon+'" style="width:'+size+'px;height:'+size+'px;position:relative" alt="'+f.name+'">'
-    : '<div class="ficon" style="font-size:'+size+'px">'+f.icon+'</div>';
-  return '<div class="atom">'+inner+'<span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span></div>';
+  // Teacher uses its own wide photo icon + unique fire/water/electric atom class.
+  const isTeacher = f.id==='teacher';
+  const atomCls = 'atom'+(isTeacher?' teacher':'');
+  let inner;
+  if(isTeacher){
+    inner = '<img src="assets/food/teacher-icon.jpg" style="width:'+size+'px;height:'+size+'px;position:relative;border-radius:50%;object-fit:cover" alt="'+f.name+'">';
+  } else if(f.icon.indexOf('assets/')===0){
+    inner = '<img src="'+f.icon+'" style="width:'+size+'px;height:'+size+'px;position:relative" alt="'+f.name+'">';
+  } else {
+    inner = '<div class="ficon" style="font-size:'+size+'px">'+f.icon+'</div>';
+  }
+  return '<div class="'+atomCls+'">'+inner+'<span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span></div>';
 }
 function renderShop(){
   const shop=$('shop'); if(!shop) return; shop.innerHTML='';
