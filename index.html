@@ -418,6 +418,42 @@
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
   }
   .pixel-text{color:#8ce99a; font-family:'Press Start 2P',monospace; font-size:40px; text-transform:uppercase; text-shadow:4px 4px 0 #000}
+  /* ---------- CHAMPION MODE (flashcards in arena, slim deck) ---------- */
+  #champ-table{border-collapse:collapse; width:100%; min-width:640px; background:#fff; font-size:15px}
+  #champ-table th{background:#5c4a3a; color:#fff; padding:12px 10px; font-size:15px; position:sticky; top:0}
+  #champ-table th:first-child{border-radius:14px 0 0 0}
+  #champ-table th:last-child{border-radius:0 14px 0 0}
+  #champ-table td{padding:8px; border-bottom:2px solid #f0e9df; vertical-align:middle; text-align:center; color:#3e342c}
+  #champ-table input[type=text]{width:100%; padding:8px 10px; font-size:15px; border:2px solid #e5ddd2; border-radius:10px; background:#fdfbf8; text-align:center}
+  #champ-table input[data-col="1"]{text-align:left}
+  #champ-table .cell-id{position:relative}
+  #champ-table .cell-id input{padding-left:44px}
+  #champ-table .cell-thumb{position:absolute; left:6px; top:50%; transform:translateY(-50%); width:32px; height:32px; display:flex; align-items:center; justify-content:center}
+  #champ-table .cell-thumb img{max-width:32px; max-height:32px; object-fit:contain; border-radius:6px}
+  #mode-timer-btn.active-mode{background:#27ae60 !important}
+  #mode-champ-btn.active-mode{background:#27ae60 !important}
+  /* Cards overlay: sits in arena above fighters, below clock */
+  #champ-cards{position:absolute; left:0; right:0; top:64px; bottom:200px; display:flex; gap:12px; align-items:center; justify-content:center; z-index:30; pointer-events:none; padding:0 12px}
+  #champ-cards.hidden{display:none !important}
+  .champ-card{pointer-events:auto; background:#fff; border:4px solid #ffd43b; border-radius:16px; padding:10px; max-width:280px; min-width:170px; max-height:100%; overflow:hidden; display:flex; flex-direction:column; align-items:center; gap:6px; box-shadow:0 6px 22px rgba(0,0,0,.5); position:relative}
+  .champ-card img{max-width:100%; max-height:46%; object-fit:contain; border-radius:10px}
+  .champ-card .champ-text{color:#3e342c; font-weight:bold; text-align:center; line-height:1.25; word-break:break-word}
+  .champ-card .champ-text.sz-sm{font-size:20px}
+  .champ-card .champ-text.sz-md{font-size:30px}
+  .champ-card .champ-text.sz-lg{font-size:42px}
+  .champ-card .champ-judge{display:flex; gap:8px; width:100%}
+  .champ-card .champ-judge button{flex:1; font-size:18px; padding:8px; border-radius:12px; color:#fff}
+  .champ-card .cj-ok{background:var(--accent)}
+  .champ-card .cj-bad{background:var(--danger)}
+  .champ-card .champ-time{position:absolute; top:6px; right:8px; background:rgba(0,0,0,.7); color:#ffd43b; font-weight:bold; font-size:16px; border-radius:10px; padding:2px 8px}
+  .champ-card.judged-ok{border-color:#27ae60; opacity:.75}
+  .champ-card.judged-ok::after{content:'✓'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:80px; color:#27ae60; background:rgba(255,255,255,.35)}
+  .champ-card.judged-bad{border-color:#e74c3c; opacity:.75}
+  .champ-card.judged-bad::after{content:'✗'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:80px; color:#e74c3c; background:rgba(255,255,255,.35)}
+  /* Slim deck while Champion plays: main Correct/Wrong hidden (each card has its own) */
+  body.champ-play #judge-row{display:none}
+  body.champ-play #food-shop{height:96px; min-height:96px; max-height:96px}
+  body.champ-play #clock-display{display:none}
 </style>
 </head>
 <body>
@@ -446,6 +482,7 @@
     <button id="spb-boss" onclick="showPane('boss')">👹 Boss</button>
     <button id="spb-hero" onclick="showPane('hero')">🦸 Hero</button>
     <button id="spb-food" onclick="showPane('food')">🍔 Food</button>
+    <button id="spb-champ" onclick="showPane('champ')">🃏 Champion</button>
     <button id="spb-bg" onclick="showPane('bg')">🌳 BG + Music</button>
     <button id="spb-keys" onclick="showPane('keys')">⌨ Keys</button>
   </div>
@@ -521,6 +558,71 @@
     <div class="row"><button class="btn-add" onclick="saveGifSettings()">Save donut gif</button></div>
   </fieldset>
   </div>
+  <div class="setup-pane hidden" id="sp-champ">
+  <fieldset>
+    <legend>🃏 Champion mode — flashcards in the arena</legend>
+    <div style="font-size:15px;color:#5c4a3a;margin-bottom:8px">Game mode: <b id="mode-label">⏱ Timer</b></div>
+    <div class="row">
+      <button class="btn-add" id="mode-timer-btn" onclick="setGameMode('timer')">⏱ Timer</button>
+      <button class="btn-add" id="mode-champ-btn" onclick="setGameMode('champion')">🃏 Champion</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label>Cards per round: <input type="number" id="champ-num" value="3" min="2" max="7" style="width:60px" onchange="champSaveSettings()"></label>
+      <label>Show:
+        <select id="champ-show" onchange="champSaveSettings()">
+          <option value="image">Image only</option>
+          <option value="text">Text only</option>
+          <option value="both" selected>Image + Text</option>
+        </select>
+      </label>
+      <label>Text size:
+        <select id="champ-textsize" onchange="champSaveSettings()">
+          <option value="sm">Small</option>
+          <option value="md" selected>Medium</option>
+          <option value="lg">Large</option>
+        </select>
+      </label>
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>📋 Champion cards — 3 columns (paste from Excel works)</legend>
+    <div style="font-size:15px;color:#5c4a3a;margin-bottom:6px">Col 1 = ID Front (number matching an image, shows thumbnail). Col 2 = Text Front (if filled, card shows the text big and clear). Col 3 = Time Front (seconds to show the card, empty = no limit). Paste tab-separated Excel data straight into the grid.</div>
+    <div class="row">
+      <label>Column: <select id="champ-auto-col"><option value="0">ID Front</option><option value="1">Text Front</option><option value="2">Time Front</option></select></label>
+      <label>From: <input type="number" id="champ-auto-start" style="width:70px"></label>
+      <label>To: <input type="number" id="champ-auto-end" style="width:70px"></label>
+      <button class="btn-add" onclick="champAutoFill()">🪄 Auto Fill</button>
+      <label>Secs: <input type="number" id="champ-quick-time" value="10" min="1" style="width:70px"></label>
+      <button class="btn-add" onclick="champFillTime()">⏱ Fill Time</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn-add" onclick="champAddRows()">+ Add 10 rows</button>
+      <button class="btn-clear" onclick="champClearCol('all')">Clear all</button>
+      <button class="btn-clear" onclick="champClearCol(0)">Clear ID</button>
+      <button class="btn-clear" onclick="champClearCol(1)">Clear Text</button>
+      <button class="btn-clear" onclick="champClearCol(2)">Clear Time</button>
+    </div>
+    <div class="table-wrap"><table id="champ-table">
+      <thead><tr><th>ID Front</th><th>Text Front</th><th>Time Front (s)</th></tr></thead>
+      <tbody id="champ-grid"></tbody>
+    </table></div>
+  </fieldset>
+  <fieldset>
+    <legend>🖼️ Image pool (remembered in this browser)</legend>
+    <div style="font-size:13px;color:#5c4a3a;margin-bottom:6px" id="champ-pool-count"></div>
+    <div class="row">
+      <button class="btn-add" onclick="$('champ-file').click()">📁 Upload files</button>
+      <input type="file" id="champ-file" accept="image/*" multiple style="display:none" onchange="champUpload(this,false)">
+      <button class="btn-add" onclick="$('champ-folder').click()">📂 Upload folder</button>
+      <input type="file" id="champ-folder" webkitdirectory style="display:none" onchange="champUpload(this,true)">
+      <button class="btn-clear" onclick="champClearPool()">Clear pool</button>
+    </div>
+    <div style="font-size:13px;color:#5c4a3a" id="champ-upload-status"></div>
+    <div class="row" style="margin-top:8px">
+      <label>Card image size: <input type="range" id="champ-imgsize" min="50" max="150" value="100" oninput="champSaveSettings();champPaint()"><span id="champ-imgsize-val">100%</span></label>
+    </div>
+  </fieldset>
+  </div>
   <div class="setup-pane hidden" id="sp-bg">
 
   <fieldset>
@@ -581,6 +683,7 @@
     <div id="ice-block" class="hidden">🧊</div>
     <div id="eat-frame" class="hidden"><img id="eat-gif" alt="eating"><span id="eat-fx-badge"></span></div>
     <div id="love-text" class="hidden">I love you, Ms. Vi</div>
+    <div id="champ-cards" class="hidden"></div>
   </div>
 
   <div id="deck">
@@ -702,7 +805,7 @@ const HERO_SKILLS = [];
 // 6 food dishes: thrown to Boss, Boss sits and eats (swap to eat.gif), then grows.
 const EAT_IMAGE = 'assets/combo/eat.gif';
 function showPane(name){
-  ['time','boss','hero','food','bg','keys'].forEach(p=>{
+  ['time','boss','hero','food','champ','bg','keys'].forEach(p=>{
     $('sp-'+p).classList.toggle('hidden', p!==name);
     $('spb-'+p).classList.toggle('active', p===name);
   });
@@ -1014,7 +1117,16 @@ function setPreset(sec, btn){
 /* ================= SLIDESHOW REMOVED (tab Chieu hinh deleted) ================= */
 
 /* ================= ARENA START/STOP ================= */
+let gameMode = localStorage.getItem('timer_gamemode') || 'timer'; // 'timer' | 'champion'
+function setGameMode(m){
+  gameMode = m;
+  localStorage.setItem('timer_gamemode', m);
+  const lb=$('mode-label'); if(lb) lb.textContent = m==='champion' ? '🃏 Champion' : '⏱ Timer';
+  if($('mode-timer-btn')) $('mode-timer-btn').classList.toggle('active-mode', m==='timer');
+  if($('mode-champ-btn')) $('mode-champ-btn').classList.toggle('active-mode', m==='champion');
+}
 function startArena(){
+  if(gameMode==='champion'){ startChampion(); return; }
   const h=parseInt($('input-h').value)||0, m=parseInt($('input-m').value)||0, s=parseInt($('input-s').value)||0;
   totalTimeMs=(h*3600+m*60+s)*1000;
   if(totalTimeMs<=0){ alert('Please enter a time greater than 0!'); return; }
@@ -1113,15 +1225,17 @@ function pauseGame(){
 }
 function resumeGame(){
   isRunning=true; lastFrameTime=performance.now();
-  animationFrameId=requestAnimationFrame(updateGame);
+  animationFrameId=requestAnimationFrame(document.body.classList.contains('champ-play')?updateChampGame:updateGame);
   $('btn-resume').classList.add('hidden'); $('btn-pause').classList.remove('hidden');
 }
 function quitArena(){
   isRunning=false; cancelAnimationFrame(animationFrameId);
+  champCleanup();
   showTab('setup');
 }
 function triggerEnd(win){
   isRunning=false; cancelAnimationFrame(animationFrameId);
+  champCleanup();
   const t=$('end-title');
   t.textContent=win?'🏆 HERO WINS!':'👹 BOSS WINS!';
   t.className='pixel-text '+(win?'win':'lose');
@@ -1163,16 +1277,409 @@ function updateMeters(){
 // Keyboard + mouse-zone inputs (same core as buttons).
 document.addEventListener('keydown', e=>{
   if($('screen-arena').classList.contains('hidden')) return;
+  if(gameMode==='champion' && document.body.classList.contains('champ-play')){
+    if(e.key===SETTINGS.keyCorrect){ champJudgeFirst(true); return; }
+    else if(e.key===SETTINGS.keyWrong){ champJudgeFirst(false); return; }
+    else return;
+  }
   if(e.key===SETTINGS.keyCorrect) onCorrect();
   else if(e.key===SETTINGS.keyWrong) onWrong();
 });
 $('arena').addEventListener('mousedown', e=>{
   if(!SETTINGS.mouseZone || $('screen-arena').classList.contains('hidden')) return;
+  if(gameMode==='champion' && document.body.classList.contains('champ-play')){
+    if(e.target.closest && e.target.closest('.champ-card')) return; // card's own ✓/✗ handles it
+    if(e.button===0) champJudgeFirst(true); else if(e.button===2) champJudgeFirst(false);
+    return;
+  }
   if(e.button===0) onCorrect(); else if(e.button===2) onWrong();
 });
 $('arena').addEventListener('contextmenu', e=>{ if(SETTINGS.mouseZone) e.preventDefault(); });
 
-/* ================= SHOP + FOOD EFFECTS (framework) ================= */
+/* ================= CHAMPION MODE (flashcards — Timer code untouched) ================= */
+// All champ* functions are self-contained. Timer functions are only guarded at:
+// startArena (routes by mode), keydown/mousedown (judge-first), resumeGame (loop pick),
+// triggerEnd/quitArena/returnToSetup (hide cards). Nothing else in Timer is modified.
+let champPool = {};          // id -> dataURL image (IndexedDB, this browser)
+let champRows = 30;          // grid rows shown
+let champData = [];          // [{id,text,time}] persisted
+let champDeck = [], champRound = [], champTarget = 0, champCorrect = 0;
+let champTickTimer = null, champSaveTimer = null;
+const CHAMP_WALK_MS = 240000; // Boss crosses the arena in ~4 min if unfed
+function champEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function champSettings(){
+  return {
+    cards: Math.min(7, Math.max(2, parseInt($('champ-num')?$('champ-num').value:3)||3)),
+    show: ($('champ-show')?$('champ-show').value:'both'),
+    textsize: ($('champ-textsize')?$('champ-textsize').value:'md'),
+    imgsize: parseInt($('champ-imgsize')?$('champ-imgsize').value:100)||100
+  };
+}
+function champSaveSettings(){
+  try{
+    const s=champSettings();
+    localStorage.setItem('timer_champ_cards', s.cards);
+    localStorage.setItem('timer_champ_show', s.show);
+    localStorage.setItem('timer_champ_textsize', s.textsize);
+    localStorage.setItem('timer_champ_imgsize', s.imgsize);
+  }catch(e){}
+  const v=$('champ-imgsize-val'); if(v) v.textContent=champSettings().imgsize+'%';
+}
+function champSaveGrid(){
+  clearTimeout(champSaveTimer);
+  champSaveTimer=setTimeout(()=>{
+    const rows=[];
+    for(let i=0;i<champRows;i++){
+      const a=document.querySelector('#champ-grid input[data-row="'+i+'"][data-col="0"]');
+      if(!a) break;
+      const id=a.value.trim();
+      const tx=document.querySelector('#champ-grid input[data-row="'+i+'"][data-col="1"]');
+      const tm=document.querySelector('#champ-grid input[data-row="'+i+'"][data-col="2"]');
+      const text=tx?tx.value.trim():'', time=tm?tm.value.trim():'';
+      if(id||text) rows.push({id, text, time});
+    }
+    champData=rows;
+    try{ localStorage.setItem('timer_champ_data', JSON.stringify(rows)); }catch(e){}
+  }, 500);
+}
+function champThumbSrc(id){
+  if(!id) return '';
+  if(champPool[id]) return champPool[id];
+  if(id.indexOf('http')===0 || id.indexOf('data:image')===0) return id;
+  return '';
+}
+function champRenderGrid(){
+  const gb=$('champ-grid'); if(!gb) return;
+  gb.innerHTML='';
+  for(let i=0;i<champRows;i++){
+    const d=champData[i]||{id:'',text:'',time:''};
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td class="cell-id"><span class="cell-thumb" data-thumb="'+i+'"></span>'
+      +'<input type="text" data-row="'+i+'" data-col="0" placeholder="1" value="'+champEsc(d.id)+'"></td>'
+      +'<td><input type="text" data-row="'+i+'" data-col="1" placeholder="Apple" value="'+champEsc(d.text)+'"></td>'
+      +'<td><input type="text" data-row="'+i+'" data-col="2" placeholder="10" style="max-width:90px" value="'+champEsc(d.time)+'"></td>';
+    gb.appendChild(tr);
+  }
+  champPaintThumbs();
+}
+function champPaintThumbs(){
+  for(let i=0;i<champRows;i++){
+    const th=document.querySelector('#champ-grid [data-thumb="'+i+'"]');
+    const inp=document.querySelector('#champ-grid input[data-row="'+i+'"][data-col="0"]');
+    if(!th||!inp) continue;
+    const src=champThumbSrc(inp.value.trim());
+    th.innerHTML=src?'<img src="'+src+'" onerror="this.style.display=\'none\'">':'';
+  }
+  const c=$('champ-pool-count');
+  if(c) c.textContent='Pool: '+Object.keys(champPool).length+' image(s) stored in this browser.';
+}
+function champPaint(){ champPaintThumbs(); }
+function champAddRows(){ champRows+=10; champRenderGrid(); }
+function champClearCol(col){
+  const msg = col==='all' ? 'Clear the whole Champion grid?' : 'Clear column '+col+'?';
+  if(!confirm(msg)) return;
+  for(let i=0;i<champRows;i++){
+    const sel = col==='all' ? '#champ-grid input[data-row="'+i+'"]' : '#champ-grid input[data-row="'+i+'"][data-col="'+col+'"]';
+    document.querySelectorAll(sel).forEach(el=>{ el.value=''; });
+  }
+  champPaintThumbs(); champSaveGrid();
+}
+function champAutoFill(){
+  const col=parseInt($('champ-auto-col').value)||0;
+  const start=parseInt($('champ-auto-start').value), end=parseInt($('champ-auto-end').value);
+  if(isNaN(start)||isNaN(end)){ alert('Enter From and To numbers!'); return; }
+  let r=0; const step=start<=end?1:-1;
+  for(let n=start; (step===1?n<=end:n>=end); n+=step){
+    if(r>=champRows) break;
+    const inp=document.querySelector('#champ-grid input[data-row="'+r+'"][data-col="'+col+'"]');
+    if(inp){ inp.value=n; }
+    r++;
+  }
+  champPaintThumbs(); champSaveGrid();
+}
+function champFillTime(){
+  const t=$('champ-quick-time').value;
+  if(!t){ alert('Enter seconds!'); return; }
+  for(let i=0;i<champRows;i++){
+    const idEl=document.querySelector('#champ-grid input[data-row="'+i+'"][data-col="0"]');
+    const txEl=document.querySelector('#champ-grid input[data-row="'+i+'"][data-col="1"]');
+    if((idEl&&idEl.value.trim())||(txEl&&txEl.value.trim())){
+      const tm=document.querySelector('#champ-grid input[data-row="'+i+'"][data-col="2"]');
+      if(tm) tm.value=t;
+    }
+  }
+  champSaveGrid();
+}
+// IndexedDB image pool (own DB so Timer data is never touched).
+function champIdb(){
+  return new Promise(resolve=>{
+    try{
+      const req=indexedDB.open('TimerChampDB', 1);
+      req.onupgradeneeded=e=>{ const db=e.target.result; if(!db.objectStoreNames.contains('images')) db.createObjectStore('images'); };
+      req.onsuccess=e=>resolve(e.target.result);
+      req.onerror=()=>resolve(null);
+    }catch(e){ resolve(null); }
+  });
+}
+async function champLoadPool(){
+  const db=await champIdb(); if(!db) return;
+  try{
+    const tx=db.transaction('images','readonly');
+    const store=tx.objectStore('images');
+    const rq=store.openCursor();
+    rq.onsuccess=e=>{
+      const cur=e.target.result;
+      if(cur){ champPool[cur.key]=cur.value; cur.continue(); }
+      else champPaintThumbs();
+    };
+  }catch(e){}
+}
+async function champSavePool(){
+  const db=await champIdb(); if(!db) return;
+  try{
+    const tx=db.transaction('images','readwrite');
+    const store=tx.objectStore('images');
+    for(const k of Object.keys(champPool)) store.put(champPool[k], k);
+  }catch(e){}
+}
+function champUpload(input, isFolder){
+  const files=Array.from(input.files||[]).filter(f=>f.type.indexOf('image/')===0);
+  input.value='';
+  if(!files.length){ alert('No images found!'); return; }
+  const st=$('champ-upload-status');
+  if(st) st.textContent='Processing 0 / '+files.length+'...';
+  let done=0;
+  const one=file=>new Promise(res=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        try{
+          const maxDim=1200;
+          let w=img.width, h=img.height;
+          if(w>h){ if(w>maxDim){ h*=maxDim/w; w=maxDim; } }
+          else { if(h>maxDim){ w*=maxDim/h; h=maxDim; } }
+          const cv=document.createElement('canvas'); cv.width=Math.round(w); cv.height=Math.round(h);
+          cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+          const key=(file.name.replace(/\.[^.]+$/,'')||file.name);
+          champPool[key]=cv.toDataURL('image/webp',0.9);
+        }catch(e){}
+        res();
+      };
+      img.onerror=()=>res();
+      img.src=ev.target.result;
+    };
+    r.onerror=()=>res();
+    r.readAsDataURL(file);
+  });
+  (async()=>{
+    for(const f of files){ await one(f); done++; if(st) st.textContent='Processing '+done+' / '+files.length+'...'; }
+    await champSavePool();
+    if(st) st.textContent='Saved '+done+' image(s)! Type the file name (without .jpg/.png) into ID Front.';
+    champPaintThumbs();
+  })();
+}
+async function champClearPool(){
+  if(!confirm('Delete all Champion pool images?')) return;
+  champPool={};
+  const db=await champIdb();
+  if(db){ try{ db.transaction('images','readwrite').objectStore('images').clear(); }catch(e){} }
+  champPaintThumbs();
+  if($('champ-upload-status')) $('champ-upload-status').textContent='Pool cleared.';
+}
+// ---- Champion game ----
+function champValidCards(){
+  return champData.filter(c=>c.id||c.text);
+}
+function champShuffle(a){
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+function startChampion(){
+  const valid=champValidCards();
+  if(!valid.length){ alert('Add at least 1 card in the 🃏 Champion tab first!'); showPane('champ'); return; }
+  SETTINGS.keyCorrect=$('key-correct').value||'ArrowRight';
+  SETTINGS.keyWrong=$('key-wrong').value||'ArrowLeft';
+  SETTINGS.mouseZone=$('mouse-zone').checked;
+  const b=$('boss-url').value.trim()||selBoss, hh=$('hero-url').value.trim()||selHero;
+  const bossSrc=b||'assets/boss/boss1.gif', heroSrc=hh||'assets/hero/player1.gif';
+  const bgRemembered=localStorage.getItem('timer_bg')||'';
+  const bgPast=$('bg-url').value.trim();
+  if(bgPast) localStorage.setItem('timer_bg', bgPast);
+  const bg=bgPast||bgRemembered;
+  $('bg-layer').style.backgroundImage=bg?`url("${bg}")`:'url("assets/bg/jungle.jpg")';
+  applyBgmChoice();
+  rmWhiteBoss=$('boss-rmwhite')?$('boss-rmwhite').checked:true;
+  localStorage.setItem('timer_rmwhite', rmWhiteBoss?'1':'0');
+  $('boss-img').src=bossSrc; $('hero-img').src=heroSrc;
+  applySizes();
+  $('boss').classList.toggle('mirrored', flipBoss);
+  $('boss').classList.toggle('rmwhite', rmWhiteBoss);
+  $('hero').classList.toggle('mirrored', flipHero);
+  $('boss-face').src=bossSrc; $('hero-face').src=heroSrc;
+  remainingTimeMs=0; bossProgress=0; mana=0; combo=0;
+  correctCount=0; wrongCount=0; skillsCast=0; foodsEaten=0;
+  foodQueue=[]; bossEating=false;
+  clearFxLayers();
+  bossFrozenUntil=0; bossSlowUntil=0; bossFastUntil=0; bossGrowScale=1;
+  $('progress-fill').style.width='0%';
+  $('progress-fill').className='progress-fill';
+  $('status-badge').classList.add('hidden');
+  $('love-text').classList.add('hidden');
+  updateMeters(); renderShop();
+  $('screen-setup').classList.add('hidden');
+  $('screen-arena').classList.remove('hidden');
+  $('end-screen').classList.add('hidden');
+  document.body.classList.add('playing');
+  document.body.classList.add('champ-play');
+  if($('arena-controls')) $('arena-controls').classList.remove('hidden');
+  $('btn-pause').classList.remove('hidden');
+  $('btn-resume').classList.add('hidden');
+  champDeck=champShuffle(valid.slice());
+  champTarget=champDeck.length; champCorrect=0;
+  $('champ-cards').classList.remove('hidden');
+  champDrawRound();
+  isRunning=true; lastFrameTime=performance.now();
+  cancelAnimationFrame(animationFrameId);
+  animationFrameId=requestAnimationFrame(updateChampGame);
+}
+function updateChampGame(now){
+  if(!isRunning) return;
+  const dt=now-lastFrameTime; lastFrameTime=now;
+  let speed=1;
+  if(now<bossFrozenUntil) speed=0; else if(now<bossSlowUntil) speed=0.5;
+  if(now<bossFastUntil && speed>0) speed=2;
+  bossProgress+=(dt/CHAMP_WALK_MS)*100*speed;
+  updateGraphics();
+  if(bossProgress>=100){ bossProgress=100; updateGraphics(); return triggerEnd(false); }
+  animationFrameId=requestAnimationFrame(updateChampGame);
+}
+function champDrawRound(){
+  if($('screen-arena').classList.contains('hidden')) return;
+  clearInterval(champTickTimer); champTickTimer=null;
+  const n=champSettings().cards;
+  champRound=[];
+  while(champRound.length<n){
+    if(!champDeck.length){
+      const v=champValidCards();
+      if(!v.length) break;
+      champDeck=champShuffle(v.slice());
+    }
+    champRound.push(champDeck.pop());
+  }
+  const box=$('champ-cards'); box.innerHTML='';
+  const s=champSettings();
+  champRound.forEach((c,idx)=>{
+    const card=document.createElement('div');
+    card.className='champ-card'; card.id='champ-card-'+idx;
+    const showText = c.text && (s.show==='text'||s.show==='both');
+    const showImg = c.id && (s.show==='image'||s.show==='both'||!c.text);
+    let inner='';
+    if(showImg){
+      const src=champThumbSrc(c.id);
+      if(src) inner+='<img src="'+src+'" style="width:'+s.imgsize+'%" onerror="this.style.display=\'none\'">';
+    }
+    if(showText) inner+='<div class="champ-text sz-'+s.textsize+'">'+champEsc(c.text)+'</div>';
+    if(!inner) inner+='<div class="champ-text sz-'+s.textsize+'">'+champEsc(c.id||'?')+'</div>';
+    const t=parseInt(c.time)||0;
+    if(t>0) inner+='<div class="champ-time" id="champ-time-'+idx+'">'+t+'</div>';
+    inner+='<div class="champ-judge"><button class="cj-ok" onclick="champJudge('+idx+',true)">✓</button><button class="cj-bad" onclick="champJudge('+idx+',false)">✗</button></div>';
+    card.innerHTML=inner;
+    card._left=t>0?t:null; card._judged=false;
+    box.appendChild(card);
+  });
+  if(champRound.some(c=>(parseInt(c.time)||0)>0)){
+    champTickTimer=setInterval(champTick, 500);
+  }
+}
+function champTick(){
+  if(!isRunning) return;
+  let any=false;
+  champRound.forEach((c,idx)=>{
+    const el=$('champ-card-'+idx);
+    if(!el||el._judged||el._left===null) return;
+    any=true;
+    el._left-=0.5;
+    const badge=$('champ-time-'+idx);
+    if(badge) badge.textContent=Math.max(0,Math.ceil(el._left));
+    if(el._left<=0) champJudge(idx,false);
+  });
+  if(!any) clearInterval(champTickTimer);
+}
+function champJudge(idx, ok){
+  const el=$('champ-card-'+idx);
+  if(!el||el._judged) return;
+  if($('screen-arena').classList.contains('hidden')) return;
+  el._judged=true;
+  el.classList.add(ok?'judged-ok':'judged-bad');
+  if(ok){ onCorrect(); champCorrect++; }
+  else { onWrong(); }
+  if(champCorrect>=champTarget){
+    clearInterval(champTickTimer);
+    setTimeout(()=>triggerEnd(true), 900);
+    return;
+  }
+  const allDone=champRound.every((c,i)=>{ const e=$('champ-card-'+i); return e&&e._judged; });
+  if(allDone) setTimeout(champDrawRound, 900);
+}
+function champJudgeFirst(ok){
+  for(let i=0;i<champRound.length;i++){
+    const el=$('champ-card-'+i);
+    if(el&&!el._judged){ champJudge(i,ok); return; }
+  }
+}
+function champCleanup(){
+  clearInterval(champTickTimer); champTickTimer=null;
+  const box=$('champ-cards');
+  if(box){ box.innerHTML=''; box.classList.add('hidden'); }
+  document.body.classList.remove('champ-play');
+}
+(function champInit(){
+  try{
+    champData=JSON.parse(localStorage.getItem('timer_champ_data')||'[]');
+    if(!Array.isArray(champData)) champData=[];
+  }catch(e){ champData=[]; }
+  if(champData.length+5>champRows) champRows=champData.length+5;
+  if($('champ-num')) $('champ-num').value=localStorage.getItem('timer_champ_cards')||'3';
+  if($('champ-show')) $('champ-show').value=localStorage.getItem('timer_champ_show')||'both';
+  if($('champ-textsize')) $('champ-textsize').value=localStorage.getItem('timer_champ_textsize')||'md';
+  if($('champ-imgsize')){ $('champ-imgsize').value=localStorage.getItem('timer_champ_imgsize')||'100'; }
+  setGameMode(gameMode);
+  champRenderGrid();
+  champSaveSettings();
+  champLoadPool();
+  const gb=$('champ-grid');
+  if(gb){
+    gb.addEventListener('input', e=>{
+      if(e.target.tagName!=='INPUT') return;
+      if(e.target.getAttribute('data-col')==='0') champPaintThumbs();
+      champSaveGrid();
+    });
+    gb.addEventListener('paste', e=>{
+      e.preventDefault();
+      const txt=(e.clipboardData||window.clipboardData).getData('text');
+      const rows=txt.split(/\r?\n/);
+      let sr=0, sc=0;
+      if(e.target&&e.target.tagName==='INPUT'){
+        sr=parseInt(e.target.getAttribute('data-row'))||0;
+        sc=parseInt(e.target.getAttribute('data-col'))||0;
+      }
+      rows.forEach((rowStr,rIdx)=>{
+        if(!rowStr.trim()&&rIdx===rows.length-1) return;
+        rowStr.split('\t').forEach((colStr,cIdx)=>{
+          const tr2=sr+rIdx, tc=sc+cIdx;
+          if(tc>2) return;
+          while(tr2>=champRows){ champRows+=10; }
+          const inp=document.querySelector('#champ-grid input[data-row="'+tr2+'"][data-col="'+tc+'"]');
+          if(!inp){ champRenderGrid(); }
+          const inp2=document.querySelector('#champ-grid input[data-row="'+tr2+'"][data-col="'+tc+'"]');
+          if(inp2) inp2.value=colStr.trim();
+        });
+      });
+      champRenderGrid(); champSaveGrid();
+    });
+  }
+})();
 function skillIconHtml(f, size){
   size = size||30;
   // Icon is flex-centered (CSS) so it always sits at the atom centre;
