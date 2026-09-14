@@ -346,8 +346,13 @@
   .mcost.orb-burn  {background:radial-gradient(circle at 32% 28%, #ffd9c9 0%, #ff6b35 38%, #c1272d 75%, #4d0800 100%); box-shadow:0 0 12px rgba(255,107,53,.85), inset 0 -6px 12px rgba(0,0,0,.45)}
   .mcost.orb-poison{background:radial-gradient(circle at 32% 28%, #e4ffd6 0%, #66bb44 38%, #2d7a1f 75%, #0c330a 100%); box-shadow:0 0 12px rgba(102,187,68,.8), inset 0 -6px 12px rgba(0,0,0,.45)}
   .mcost.orb-donut {background:radial-gradient(circle at 32% 28%, #ffe0f1 0%, #f06292 38%, #a51c5b 75%, #470a28 100%); box-shadow:0 0 12px rgba(240,98,146,.8), inset 0 -6px 12px rgba(0,0,0,.45)}
-  /* Ms. Vi fixed picture orb — untouched by the jewel recolour */
+  /* Ms. Vi fixed pokeball orb — picture only for her, number drawn on top */
   .mcost.orb-fixed{background:#101a3a url('assets/mana-orb.jpg') center/cover no-repeat; box-shadow:0 0 12px rgba(0,229,255,.75), inset 0 0 10px rgba(0,0,0,.55)}
+  .mcost.orb-poke{background:#fff; border-color:#222; overflow:hidden; box-shadow:0 0 12px rgba(255,60,60,.8), inset 0 -6px 12px rgba(0,0,0,.25)}
+  .mcost.orb-poke::before{display:none}
+  .mcost.orb-poke .poke-top{position:absolute; top:0; left:0; right:0; height:44%; background:linear-gradient(#ff5b5b,#c81e1e); border-bottom:4px solid #222}
+  .mcost.orb-poke .poke-btn{position:absolute; top:50%; left:50%; width:18px; height:18px; margin:-9px 0 0 -9px; border-radius:50%; background:#fff; border:3px solid #222; z-index:1}
+  .mcost.orb-poke .poke-num{position:relative; z-index:2; background:rgba(255,255,255,.92); border:2px solid #222; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:19px; color:#111; text-shadow:none}
   /* 3D atom: icon is the nucleus. 3 CONCENTRIC orbits, each tilted in its OWN
      plane (flat / upright / diagonal — like a universe symbol). Front half of
      each orbit passes IN FRONT of the icon, back half BEHIND it.
@@ -883,6 +888,27 @@ function sfxWhoosh(){ beep(300,0.4,'sawtooth',0.12); beep(600,0.35,'sine',0.1,0.
 const EAT_SFX = {yummy:new Audio('assets/sfx/eat-yummy.mp3'), gulp:new Audio('assets/sfx/eat-gulp.mp3'), msvi:new Audio('assets/sfx/msvi.mp3')};
 function playEatSfx(which){ if(!AUDIO.sfxOn) return; try{ const a=EAT_SFX[which]; a.currentTime=0; a.play().catch(()=>{}); }catch(e){} }
 function stopEatSfx(which){ try{ const a=EAT_SFX[which]; a.pause(); a.currentTime=0; }catch(e){} }
+// Yummy loop: repeats with 0.8s gap until the eat gif ends, then caller plays gulp
+// and the extra-look stage continues (extra look itself has no eating sound).
+let yummyTimer=null, yummyEnd=0;
+function stopYummyLoop(){ if(yummyTimer){ clearTimeout(yummyTimer); yummyTimer=null; } try{ EAT_SFX.yummy.pause(); EAT_SFX.yummy.currentTime=0; }catch(e){} }
+function playYummyLoop(totalMs){
+  stopYummyLoop();
+  if(!AUDIO.sfxOn) return;
+  yummyEnd=performance.now()+totalMs;
+  const one=()=>{
+    yummyTimer=null;
+    if(performance.now()>=yummyEnd) return;
+    try{
+      const a=EAT_SFX.yummy; a.currentTime=0;
+      a.play().then(()=>{
+        const wait=Math.max((a.duration||2)*1000, 500)+800;
+        if(performance.now()+wait-800<yummyEnd+800) yummyTimer=setTimeout(one, wait);
+      }).catch(()=>{});
+    }catch(e){}
+  };
+  one();
+}
 // Ms. Vi signature sound: loops for totalMs with a 0.8s gap between loops.
 // Replaces yummy+gulp entirely — Teacher never plays the eating/gulp sounds.
 let msviSfxTimer=null, msviSfxEnd=0, msviFadeTimer=null;
@@ -1149,14 +1175,19 @@ function skillIconHtml(f, size){
   }
   return '<div class="'+atomCls+'">'+inner+'<span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span></div>';
 }
-/* Mana orb colour per dish: Teacher keeps her fixed picture orb. */
+/* Mana orb colour per dish: Teacher gets her own pokeball. */
 function orbClass(f){
-  if(!f||f.id==='teacher') return 'orb-fixed';
+  if(!f||f.id==='teacher') return 'orb-poke';
   if(f.id==='donut') return 'orb-donut';
   if(f.fx==='freeze') return 'orb-freeze';
   if(f.fx==='burn') return 'orb-burn';
   if(f.fx==='poison') return 'orb-poison';
   return 'orb-eat'; // pizza, noodles + any new dish default to golden jewel
+}
+/* Mana orb HTML: pokeball layers for Teacher, plain number for the rest. */
+function manaOrbHtml(f, price){
+  if(f&&f.id==='teacher') return '<div class="mcost orb-poke"><span class="poke-top"></span><span class="poke-btn"></span><span class="poke-num">'+price+'</span></div>';
+  return '<div class="mcost '+orbClass(f)+'">'+price+'</div>';
 }
 function renderShop(){
   const shop=$('shop'); if(!shop) return; shop.innerHTML='';
@@ -1165,7 +1196,7 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='skill-orb '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,30)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost '+orbClass(f)+'">'+f.price+'</div></div>';
+    d.innerHTML=skillIconHtml(f,30)+'<div class="scap"><div class="sname">'+f.name+'</div>'+manaOrbHtml(f,f.price)+'</div>';
     d.title=f.name+' ('+f.price+' mana)';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
     d.onclick=(function(id){ return function(){ castSkill(id,false); }; })(f.id);
@@ -1178,7 +1209,7 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='food-card '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,64)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost '+orbClass(f)+'">'+(f.price||5)+'</div></div>';
+    d.innerHTML=skillIconHtml(f,64)+'<div class="scap"><div class="sname">'+f.name+'</div>'+manaOrbHtml(f,(f.price||5))+'</div>';
     d.title=f.name+' ('+(f.price||5)+' mana) — Boss sits and eats '+f.eatSeconds+'s';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
     d.onclick=(function(id){ return function(){ applyFood(id); }; })(f.id);
@@ -1469,7 +1500,7 @@ function throwFood(f, free){
     // STAGE 1: gif shows (Boss hides) + frame takes dish colour + live FX at Boss spot right away
     showEatFrame(dishGifSrc(f), f.gifFlip, f.gifRmwhite, f.fx); // Boss hides, gif in round frame with dish colour
     if(f.id==='teacher'){ playMsViSfx(gifSec*1000); }
-    else { playEatSfx('yummy'); }
+    else { playYummyLoop(gifSec*1000); }
     if(f.fx==='burn'){ showFireAura(bossBox, gifSec*1000); }
     else if(f.fx==='freeze'){ showSnow(gifSec*1000); }
     else if(f.fx==='poison'){ showPoisonCloud(bossBox, gifSec*1000); }
@@ -1483,7 +1514,7 @@ function throwFood(f, free){
     updateMeters(); renderShop();
     setTimeout(()=>{
       hideEatFrame(); stopMsViSfx();
-      if(f.id!=='teacher'){ stopEatSfx('yummy'); playEatSfx('gulp'); }
+      if(f.id!=='teacher'){ stopYummyLoop(); playEatSfx('gulp'); }
       // STAGE 2: Boss back in its after-state for extraSec (per-dish setting).
       // after: normal | stop (trapped) | slow | fast — afterFx: none | ice | poison | fire | hearts
       const t2=performance.now(), dur=(extraSec>0?extraSec:2.5)*1000;
@@ -1599,12 +1630,12 @@ function throwRandomFood(){
     proj.classList.add('hidden'); proj.style.transition='';
     const badge=$('status-badge');
     showEatFrame(donutGifSrc(), GIF_SET.donutFlip, GIF_SET.donutRmwhite, 'donut');
-    playEatSfx('yummy');
+    playYummyLoop(3000);
     bossFrozenUntil=performance.now()+3000;
     badge.innerHTML='🍩 Donut!<small id="status-time"></small>';
     badge.className=''; badge.id='status-badge';
     badge.classList.remove('hidden');
-    setTimeout(()=>{ hideEatFrame(); stopEatSfx('yummy'); playEatSfx('gulp'); bossGrow({after:'fast'}); bossEating=false; serveNextInQueue(); }, 3000);
+    setTimeout(()=>{ hideEatFrame(); stopYummyLoop(); playEatSfx('gulp'); bossGrow({after:'fast'}); bossEating=false; serveNextInQueue(); }, 3000);
   }, 1250);
 }
 
