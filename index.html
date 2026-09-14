@@ -19,10 +19,10 @@
     font-family:'Segoe UI',Tahoma,Verdana,sans-serif;
     background:var(--bg); color:#fff;
     margin:0; padding:8px 0;
-    /* Global 0.54 scale (≈ browser 67% minus another 20%): fits 14" at 100% browser zoom.
-       The box is enlarged 1/0.54 so that after zoom it fills the viewport exactly.
+    /* Global 0.60 scale (≈ browser 67% minus another 10%): fits 14" at 100% browser zoom.
+       The box is enlarged 1/0.60 so that after zoom it fills the viewport exactly.
        Lengths below use % (of this box), never vw/vh — those would shrink twice. */
-    zoom:0.54; width:calc(100vw / 0.54); height:calc(100vh / 0.54);
+    zoom:0.60; width:calc(100vw / 0.60); height:calc(100vh / 0.60);
     display:flex; flex-direction:column; align-items:center; gap:8px;
     overflow:hidden;
   }
@@ -1265,11 +1265,23 @@ function toggleAllSkills(which, on){
   renderSkillPick(); renderShop();
 }
 // Skill positions: measure Hero/Boss centers in the arena.
+function arenaXY(el){
+  // Zoom-proof position: offsetLeft/offsetTop scale WITH CSS zoom, unlike getBoundingClientRect.
+  let x=el.offsetLeft||0, y=el.offsetTop||0, p=el.offsetParent;
+  const arena=$('arena');
+  while(p && p!==arena){ x+=p.offsetLeft||0; y+=p.offsetTop||0; p=p.offsetParent; }
+  return {x, y, w:el.offsetWidth||0, h:el.offsetHeight||0};
+}
 function castGeom(){
-  const arena=$('arena'), bossBox=$('boss'), heroBox=$('hero');
-  const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect(), hr=heroBox.getBoundingClientRect();
-  const top=(hr.top+hr.height*0.4)-ar.top;
-  return {heroX:(hr.left+hr.width*0.2)-ar.left, bossX:(br.left+br.width*0.6)-ar.left, top};
+  const bossBox=$('boss'), heroBox=$('hero');
+  const b=arenaXY(bossBox), h=arenaXY(heroBox);
+  const top=h.y+h.h*0.4;
+  return {heroX:h.x+h.w*0.2, bossX:b.x+b.w*0.6, top};
+}
+function bossPoint(){
+  // Live Boss centre RIGHT NOW (Boss may have walked on while food was flying).
+  const b=arenaXY($('boss'));
+  return {x:b.x+b.w/2, y:b.y+b.h/2, w:b.w, h:b.h};
 }
 function castSkill(id, free){
   const f=HERO_SKILLS.find(x=>x.id===id); if(!f) return;
@@ -1313,7 +1325,7 @@ function castFireball(f){
   proj.className='fireball-proj'; proj.innerHTML='<img src="'+f.icon+'" alt="fireball">';
   proj.style.position='absolute'; proj.style.bottom='auto'; proj.style.top=g.top+'px';
   proj.classList.remove('hidden'); proj.style.left=g.heroX+'px';
-  void proj.offsetWidth; proj.style.transition='left .6s linear'; proj.style.left=g.bossX+'px';
+  void proj.offsetWidth; proj.style.transition='left .6s linear'; proj.style.left=(bossPoint().x-32)+'px';
   setTimeout(()=>{
     proj.classList.add('hidden'); proj.style.transition='';
     const bossBox=$('boss');
@@ -1334,7 +1346,7 @@ function castIce(f){
   proj.className=''; proj.innerHTML='<img src="'+f.icon+'" style="width:56px;height:56px" alt="ice">';
   proj.style.position='absolute'; proj.style.top=g.top+'px';
   proj.classList.remove('hidden'); proj.style.left=g.heroX+'px';
-  void proj.offsetWidth; proj.style.transition='left .55s linear'; proj.style.left=g.bossX+'px';
+  void proj.offsetWidth; proj.style.transition='left .55s linear'; proj.style.left=(bossPoint().x-28)+'px';
   setTimeout(()=>{
     proj.classList.add('hidden'); proj.style.transition='';
     const bossBox=$('boss');
@@ -1386,12 +1398,12 @@ function castDash(f){
 // ---- overlay helpers ----
 function showPoisonCloud(bossBox, ms){
   const arena=$('arena'); if(!arena||!bossBox) return;
-  const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect();
+  const br=arenaXY(bossBox);
   for(let i=0;i<10;i++){
     const s=document.createElement('span');
     s.className='trail-bit'; s.textContent=['🟢','☠️','💚'][i%3];
-    s.style.left=((br.left-ar.left)+Math.random()*br.width)+'px';
-    s.style.top=((br.top-ar.top)+Math.random()*br.height)+'px';
+    s.style.left=(br.x+Math.random()*br.w)+'px';
+    s.style.top=(br.y+Math.random()*br.h)+'px';
     s.style.fontSize=(24+Math.random()*20)+'px';
     arena.appendChild(s);
     setTimeout(()=>s.remove(), 900);
@@ -1415,11 +1427,11 @@ function showFireAura(bossBox, ms){
   const arena=$('arena'); if(!arena||!bossBox) return;
   const r=document.createElement('div');
   r.className='fire-aura';
-  const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect();
-  const size=Math.max(br.width,br.height)*1.3;
+  const br=arenaXY(bossBox);
+  const size=Math.max(br.w,br.h)*1.3;
   r.style.width=r.style.height=size+'px';
-  r.style.left=((br.left-ar.left)+br.width/2-size/2)+'px';
-  r.style.top=((br.top-ar.top)+br.height/2-size/2)+'px';
+  r.style.left=(br.x+br.w/2-size/2)+'px';
+  r.style.top=(br.y+br.h/2-size/2)+'px';
   arena.appendChild(r);
   setTimeout(()=>r.remove(), ms||4000);
 }
@@ -1494,20 +1506,30 @@ function throwFood(f, free){
     : '<span class="fly-icon">'+f.icon+'</span>';
   proj.style.position='absolute'; proj.style.top=g.top+'px';
   proj.classList.remove('hidden'); proj.style.transition='none'; proj.style.left=g.heroX+'px';
-  // arc flight at HALF speed: 1200ms, quadratic curve Hero -> Boss, peak lifted 130px
-  const x0=g.heroX, x1=g.bossX, y0=g.top, yPeak=g.top-130;
+  // arc flight at HALF speed: 1200ms, quadratic curve Hero -> Boss, peak lifted 130px.
+  // Homing: the target re-reads the LIVE Boss spot every frame, so Boss walking
+  // on mid-flight still gets hit dead-center. Eating starts on landing, not on timer.
+  const x0=g.heroX, y0=g.top, yPeak=g.top-130;
   const t0=performance.now(), DUR=1200;
-  const arenaBox=$('arena').getBoundingClientRect();
+  let landed=false;
   function stepArc(now){
     const t=Math.min(1,(now-t0)/DUR);
-    const x=x0+(x1-x0)*t;
+    const live=bossPoint();
+    const x=x0+(live.x-x0)*t;
     const y=(1-t)*(1-t)*y0+2*(1-t)*t*yPeak+t*t*(y0+10);
-    proj.style.left=x+'px'; proj.style.top=y+'px';
+    proj.style.left=(x-60)+'px'; proj.style.top=y+'px';
     spawnTrail(x, y, f.fx);
-    if(t<1 && !proj.classList.contains('hidden')) requestAnimationFrame(stepArc);
+    if(t<1 && !proj.classList.contains('hidden')){ requestAnimationFrame(stepArc); return; }
+    if(landed) return; landed=true;
+    landAndEat();
   }
   requestAnimationFrame(stepArc);
-  setTimeout(()=>{
+  function landAndEat(){
+    const hit=bossPoint();
+    proj.style.left=(hit.x-60)+'px'; proj.style.top=(hit.y-60)+'px';
+    setTimeout(()=>startEating(), 60); // one beat on the Boss face, then it sits and eats
+  }
+  function startEating(){
     proj.classList.add('hidden'); proj.style.transition='';
     const now=performance.now();
     const bossBox=$('boss'), badge=$('status-badge'), love=$('love-text');
@@ -1537,7 +1559,7 @@ function throwFood(f, free){
       bossGrow(f);
       setTimeout(()=>{ clearAfterState(f); bossEating=false; serveNextInQueue(); }, Math.max(extraSec*1000, 2500));
     }, gifSec*1000);
-  }, 1250); // flight 1200ms + margin
+  }
 }
 // ---- after-eat states (stage 2) ----
 function applyAfterState(f, t2){
@@ -1563,14 +1585,14 @@ function clearAfterState(f){
 // Ice block: bigger than Boss (1.6x), local photo at 50% so Boss shows inside, cracks open at end.
 function showIceBlock(bossBox, f, ms){
   const arena=$('arena'), ib=$('ice-block'); if(!arena||!ib||!bossBox) return;
-  const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect();
+  const br=arenaXY(bossBox);
   const K=1.6;
   const imgHtml=f.afterImg?'<img src="'+f.afterImg+'" style="width:100%;height:100%;object-fit:cover;opacity:.5;border-radius:14px">':'<span style="font-size:64px">🧊</span>';
   ib.innerHTML=imgHtml;
   if(f.afterImg) ib.style.background='none';
-  ib.style.width=(br.width*K)+'px'; ib.style.height=(br.height*K)+'px';
-  ib.style.left=((br.left-ar.left)+br.width/2-br.width*K/2)+'px';
-  ib.style.top=((br.top-ar.top)+br.height-br.height*K)+'px';
+  ib.style.width=(br.w*K)+'px'; ib.style.height=(br.h*K)+'px';
+  ib.style.left=(br.x+br.w/2-br.w*K/2)+'px';
+  ib.style.top=(br.y+br.h-br.h*K)+'px';
   ib.classList.remove('hidden','crack');
   showSnow(ms);
   setTimeout(()=>{ ib.classList.add('crack'); }, Math.max(ms-500, 100));
@@ -1582,15 +1604,14 @@ function stopMsVi(){ if(msViTimer){ clearInterval(msViTimer); msViTimer=null; } 
 function showMsVi(bossBox, totalMs){
   const arena=$('arena'); if(!arena) return;
   stopMsVi();
-  const ar=arena.getBoundingClientRect();
-  const frame=$('eat-frame'), fr=frame&&!frame.classList.contains('hidden')?frame.getBoundingClientRect():bossBox.getBoundingClientRect();
-  const cx=(fr.left-ar.left)+fr.width/2, top=(fr.top-ar.top);
+  const frame=$('eat-frame'), fr=frame&&!frame.classList.contains('hidden')?arenaXY(frame):arenaXY(bossBox);
+  const cx=fr.x+fr.w/2, top=fr.y;
   const fanDx=[0,-70,70,-130,130,-40,40];
   let k=0;
   function one(){
     const s=document.createElement('div');
     s.className='msvi-float'; s.textContent='Ms. Vi 💕';
-    s.style.left=cx+'px'; s.style.top=(top+fr.height*0.33)+'px';
+    s.style.left=cx+'px'; s.style.top=(top+fr.h*0.33)+'px';
     arena.appendChild(s);
     const dx=fanDx[k%fanDx.length]; k++;
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -1605,15 +1626,15 @@ function showMsVi(bossBox, totalMs){
 // Floating emoji/image above Boss during the after-state.
 function floatAfter(bossBox, html, ms){
   const arena=$('arena'); if(!arena||!bossBox) return;
-  const ar=arena.getBoundingClientRect(), br=bossBox.getBoundingClientRect();
+  const br=arenaXY(bossBox);
   const n=Math.max(3, Math.min(8, Math.round(ms/1000)));
   for(let i=0;i<n;i++){
     setTimeout(()=>{
       const s=document.createElement('div');
       s.className='after-float';
       s.innerHTML=(typeof html==='string'&&html.indexOf('<')===0)?html:('<span style="font-size:44px">'+html+'</span>');
-      s.style.left=((br.left-ar.left)+Math.random()*br.width)+'px';
-      s.style.top=((br.top-ar.top)-10)+'px';
+      s.style.left=(br.x+Math.random()*br.w)+'px';
+      s.style.top=(br.y-10)+'px';
       arena.appendChild(s);
       setTimeout(()=>s.remove(), 1500);
     }, i*(ms/n));
@@ -1631,17 +1652,21 @@ function throwRandomFood(){
   proj.className=''; proj.innerHTML='<span class="fly-icon">🍩</span>';
   proj.style.position='absolute'; proj.style.top=g.top+'px';
   proj.classList.remove('hidden'); proj.style.transition='none'; proj.style.left=g.heroX+'px';
-  const x0=g.heroX, x1=g.bossX, y0=g.top, yPeak=g.top-130;
+  // Homing: target re-reads the LIVE Boss spot every frame. Eating starts on landing.
+  const x0=g.heroX, y0=g.top, yPeak=g.top-130;
   const t0=performance.now(), DUR=1200;
+  let landed=false;
   function stepArc(now){
     const t=Math.min(1,(now-t0)/DUR);
-    const x=x0+(x1-x0)*t;
+    const live=bossPoint();
+    const x=x0+(live.x-x0)*t;
     const y=(1-t)*(1-t)*y0+2*(1-t)*t*yPeak+t*t*(y0+10);
-    proj.style.left=x+'px'; proj.style.top=y+'px';
-    if(t<1 && !proj.classList.contains('hidden')) requestAnimationFrame(stepArc);
-  }
-  requestAnimationFrame(stepArc);
-  setTimeout(()=>{
+    proj.style.left=(x-60)+'px'; proj.style.top=y+'px';
+    if(t<1 && !proj.classList.contains('hidden')){ requestAnimationFrame(stepArc); return; }
+    if(landed) return; landed=true;
+    const hit=bossPoint();
+    proj.style.left=(hit.x-60)+'px'; proj.style.top=(hit.y-60)+'px';
+    setTimeout(()=>{
     proj.classList.add('hidden'); proj.style.transition='';
     const badge=$('status-badge');
     showEatFrame(donutGifSrc(), GIF_SET.donutFlip, GIF_SET.donutRmwhite, 'donut');
@@ -1651,7 +1676,9 @@ function throwRandomFood(){
     badge.className=''; badge.id='status-badge';
     badge.classList.remove('hidden');
     setTimeout(()=>{ hideEatFrame(); stopYummyLoop(); playEatSfx('gulp'); bossGrow({after:'fast'}); bossEating=false; serveNextInQueue(); }, 3000);
-  }, 1250);
+    }, 60);
+  }
+  requestAnimationFrame(stepArc);
 }
 
 /* ================= MUSIC (repo mp3 remembered, upload also works) ================= */
