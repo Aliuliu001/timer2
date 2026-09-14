@@ -14,10 +14,15 @@
     --mana-empty:#d9dee6; --mana-full:#38d977;
   }
   *{box-sizing:border-box}
+  html{overflow:hidden}
   body{
     font-family:'Segoe UI',Tahoma,Verdana,sans-serif;
     background:var(--bg); color:#fff;
-    margin:0; padding:8px 0; height:100vh;
+    margin:0; padding:8px 0;
+    /* Global 0.54 scale (≈ browser 67% minus another 20%): fits 14" at 100% browser zoom.
+       The box is enlarged 1/0.54 so that after zoom it fills the viewport exactly.
+       Lengths below use % (of this box), never vw/vh — those would shrink twice. */
+    zoom:0.54; width:calc(100vw / 0.54); height:calc(100vh / 0.54);
     display:flex; flex-direction:column; align-items:center; gap:8px;
     overflow:hidden;
   }
@@ -25,7 +30,7 @@
   button{cursor:pointer; font-weight:bold; border:none; border-radius:10px}
 
   /* ---------- TOP BAR (icon-only, compact — space goes to the time bar) ---------- */
-  #topbar{width:92vw; max-width:none; display:flex; align-items:center; gap:6px; flex-shrink:0; min-height:40px}
+  #topbar{width:92%; max-width:none; display:flex; align-items:center; gap:6px; flex-shrink:0; min-height:40px}
   #topbar h1#brand{font-size:16px; margin:0; flex:0 0 auto}
   body.playing #brand{display:none}
   #topbar button{padding:6px 10px; font-size:16px; border-radius:10px}
@@ -87,7 +92,7 @@
   }
   @keyframes comboPop{0%{opacity:0; transform:translateX(-50%) scale(.5)}15%{opacity:1; transform:translateX(-50%) scale(1.1)}30%{transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0; transform:translateX(-50%) translateY(-30px) scale(1)}}
   /* Dish manager table (Yugioh-tag style): one row per food, scrolls sideways on small screens */
-  #screen-setup{max-height:calc(100vh - 90px); overflow-y:auto; padding-bottom:28px; font-size:16px}
+  #screen-setup{max-height:calc(100% - 90px); overflow-y:auto; padding-bottom:28px; font-size:16px}
   #screen-setup::-webkit-scrollbar{width:10px; background:#e5ddd2}
   #screen-setup::-webkit-scrollbar-thumb{background:#5c4a3a; border-radius:5px}
   .table-wrap{overflow-x:auto; margin:10px 0; border-radius:14px; box-shadow:0 2px 8px rgba(92,74,58,.12)}
@@ -170,15 +175,15 @@
   }
   /* Control deck compact: everything visible on 14 inch */
   #judge-row{display:flex; gap:10px}
-  #btn-correct{flex:1; background:var(--accent); color:#fff; font-size:20px; padding:10px}
-  #btn-wrong{flex:1; background:var(--danger); color:#fff; font-size:20px; padding:10px}
+  #btn-correct{flex:1; background:var(--accent); color:#fff; font-size:16px; padding:8px}
+  #btn-wrong{flex:1; background:var(--danger); color:#fff; font-size:16px; padding:8px}
   #deck{padding:8px; gap:8px}
   #meter-row{font-size:14px}
   #mana-dots{font-size:20px}
   #bgm-btn{background:#8e44ad; color:#fff; padding:8px 12px; font-size:16px}
 
   /* ---------- ARENA SCREEN ---------- */
-  #screen-arena{width:92vw; max-width:none; height:calc(100vh - 70px); display:flex; flex-direction:column; gap:6px}
+  #screen-arena{width:92%; max-width:none; height:calc(100% - 70px); display:flex; flex-direction:column; gap:6px}
   /* Big game clock: sits ON the arena background, under the time bar */
   #clock-display{
     position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:60;
@@ -873,6 +878,7 @@ function beep(freq, dur, type, vol, when){
   if(!AUDIO.sfxOn) return;
   try{
     audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
     const o=audioCtx.createOscillator(), g=audioCtx.createGain();
     o.type=type||'sine'; o.frequency.value=freq;
     const t=audioCtx.currentTime+(when||0);
@@ -883,6 +889,8 @@ function beep(freq, dur, type, vol, when){
   }catch(e){}
 }
 function sfxWhoosh(){ beep(300,0.4,'sawtooth',0.12); beep(600,0.35,'sine',0.1,0.05); }
+function sfxCorrect(){ beep(660,0.12,'sine',0.25); beep(990,0.2,'sine',0.25,0.1); }
+function sfxWrong(){ beep(180,0.25,'sawtooth',0.2); beep(120,0.3,'square',0.12,0.06); }
 // Real eating sounds (repo mp3, SFX toggle): yummy fires when the eat gif starts,
 // gulp fires exactly when the gif time ends. The extra-look stage plays no eating sound.
 const EAT_SFX = {yummy:new Audio('assets/sfx/eat-yummy.mp3'), gulp:new Audio('assets/sfx/eat-gulp.mp3'), msvi:new Audio('assets/sfx/msvi.mp3')};
@@ -947,10 +955,17 @@ function playMsViSfx(totalMs){
 }
 function toggleSfx(){
   AUDIO.sfxOn=!AUDIO.sfxOn;
-  if(!AUDIO.sfxOn) stopMsViSfx(true);
+  if(!AUDIO.sfxOn){ stopMsViSfx(true); stopYummyLoop(); }
   localStorage.setItem('timer_sfx', AUDIO.sfxOn?'1':'0');
   $('btn-sfx').textContent=AUDIO.sfxOn?'🔊':'🔇';
 }
+// Unlock audio on first click/key (browsers block sound before any gesture).
+window.addEventListener('pointerdown', function unlockAudio(){
+  try{ audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }catch(e){}
+}, {once:true});
+window.addEventListener('keydown', function unlockAudioK(){
+  try{ audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }catch(e){}
+}, {once:true});
 (function restoreSfx(){ var b=document.getElementById('btn-sfx'); if(b) b.textContent=AUDIO.sfxOn?'🔊':'🔇'; })();
 
 /* ================= STATE ================= */
@@ -1120,7 +1135,7 @@ function returnToSetup(){ $('end-screen').classList.add('hidden'); document.body
 function onCorrect(){
   if($('screen-arena').classList.contains('hidden')) return;
   mana=Math.min(10,mana+1); combo++; correctCount++;
-  updateMeters(); renderShop();
+  sfxCorrect(); updateMeters(); renderShop();
   if(combo>=5){
     combo=0; // free FOOD shot, does not cost mana
     updateMeters();
@@ -1139,7 +1154,7 @@ function showComboPopup(text){
 }
 function onWrong(){
   if($('screen-arena').classList.contains('hidden')) return;
-  combo=0; wrongCount++; updateMeters(); renderShop();
+  combo=0; wrongCount++; sfxWrong(); updateMeters(); renderShop();
 }
 function updateMeters(){
   document.querySelectorAll('#combo-flames img').forEach((im,i)=>im.classList.toggle('lit', i<combo));
