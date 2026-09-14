@@ -421,10 +421,12 @@
   <div class="setup-pane hidden" id="sp-boss">
   <fieldset>
     <legend>Boss (left) — tick to pick 1 image</legend>
-    <label>Paste extra Boss link: <input type="text" id="boss-url" placeholder="https://..."></label>
+    <label>Paste new Boss link: <input type="text" id="boss-url" placeholder="https://..."></label>
+    <div class="row"><button class="btn-add" onclick="addBossLink()">+ Add Boss</button><span style="font-size:13px;color:#5c4a3a">Max 5 — saved, survives refresh</span></div>
     <div class="gallery" id="boss-gallery"></div>
     <div class="flip-row"><button onclick="toggleFlip('boss')">⇋ Flip Boss (face right)</button><span id="boss-flip-state">State: on (faces right)</span></div>
     <div class="size-row">Boss size: <input type="range" id="boss-size" min="50" max="300" value="130" oninput="setSize('boss')"><span id="boss-size-val">130%</span></div>
+    <label>Fast time after eating (sec): <input type="number" id="boss-fast-sec" value="5" min="1" max="30" style="width:70px" onchange="localStorage.setItem('timer_fastSec',this.value)"></label>
     <label><input type="checkbox" id="boss-rmwhite" checked> Remove white Boss background (if any)</label>
   </fieldset>
 
@@ -432,7 +434,8 @@
   <div class="setup-pane hidden" id="sp-hero">
   <fieldset>
     <legend>Hero (right) — tick to pick 1 image</legend>
-    <label>Paste extra Hero link: <input type="text" id="hero-url" placeholder="https://..."></label>
+    <label>Paste new Hero link: <input type="text" id="hero-url" placeholder="https://..."></label>
+    <div class="row"><button class="btn-add" onclick="addHeroLink()">+ Add Player</button><span style="font-size:13px;color:#5c4a3a">Max 5 — saved, survives refresh</span></div>
     <div class="gallery" id="hero-gallery"></div>
     <div class="flip-row"><button onclick="toggleFlip('hero')">⇋ Flip Hero</button><span id="hero-flip-state">State: off</span></div>
     <div class="size-row">Hero size: <input type="range" id="hero-size" min="50" max="300" value="130" oninput="setSize('hero')"><span id="hero-size-val">130%</span></div>
@@ -459,7 +462,6 @@
   <fieldset>
     <legend>Boss perk — after eating grows + runs fast</legend>
     <label>Grow per eat (%): <input type="number" id="boss-grow-pct" value="10" min="0" max="100" style="width:70px"></label>
-    <label>Speed-up (sec): <input type="number" id="boss-grow-sec" value="5" min="1" max="30" style="width:70px"></label>
     <label>Max Boss cap (% of arena height): <input type="number" id="boss-max-pct" value="70" min="30" max="90" style="width:70px"></label>
   </fieldset>
   <fieldset>
@@ -578,6 +580,20 @@ const HERO_CHOICES = [
   {name:'Hero 3', src:'assets/hero/player3.gif'},
   {name:'Hero 4', src:'assets/hero/player4.gif'},
 ];
+// Custom Boss/Player links: max 5 per gallery, remembered in localStorage.
+const MAX_FIGHTERS = 5;
+try{
+  const cb=JSON.parse(localStorage.getItem('timer_custom_boss')||'[]');
+  for(const src of cb){ if(typeof src==='string'&&src.trim()&&!BOSS_CHOICES.some(c=>c.src===src.trim())) BOSS_CHOICES.push({name:'Custom Boss', src:src.trim(), custom:true}); }
+  const ch=JSON.parse(localStorage.getItem('timer_custom_hero')||'[]');
+  for(const src of ch){ if(typeof src==='string'&&src.trim()&&!HERO_CHOICES.some(c=>c.src===src.trim())) HERO_CHOICES.push({name:'Custom Player', src:src.trim(), custom:true}); }
+}catch(e){}
+function saveCustomFighters(){
+  try{
+    localStorage.setItem('timer_custom_boss', JSON.stringify(BOSS_CHOICES.filter(c=>c.custom).map(c=>c.src)));
+    localStorage.setItem('timer_custom_hero', JSON.stringify(HERO_CHOICES.filter(c=>c.custom).map(c=>c.src)));
+  }catch(e){}
+}
 let selBoss = localStorage.getItem('timer_selBoss') || BOSS_CHOICES[0].src;
 let selHero = localStorage.getItem('timer_selHero') || HERO_CHOICES[0].src;
 let flipBoss = localStorage.getItem('timer_flipBoss')!=='0', flipHero = localStorage.getItem('timer_flipHero')==='1';
@@ -866,7 +882,6 @@ function startArena(){
   SETTINGS.keyWrong=$('key-wrong').value||'ArrowLeft';
   SETTINGS.mouseZone=$('mouse-zone').checked;
   // Appearance: tick-chosen gallery (repo files, no Pinterest block) + optional pasted link.
-  addPastedLinks();
   const b=$('boss-url').value.trim()||selBoss, hh=$('hero-url').value.trim()||selHero;
   const bossSrc=b||'assets/boss/boss1.gif', heroSrc=hh||'assets/hero/player1.gif';
   // Background: pasted link wins, else remembered link, else repo jungle default.
@@ -948,6 +963,7 @@ function updateGraphics(){
   if(st){
     if(now<bossFrozenUntil) st.textContent=Math.ceil((bossFrozenUntil-now)/1000);
     else if(now<bossSlowUntil) st.textContent=Math.ceil((bossSlowUntil-now)/1000);
+    else if(now<bossFastUntil) st.textContent=Math.ceil((bossFastUntil-now)/1000);
     else st.textContent='';
   }
 }
@@ -1255,14 +1271,14 @@ function clearFxLayers(){
 // The grow badge auto-hides, and old hide-timers can't stick on screen when a new meal starts.
 function bossGrow(){
   const pct=parseInt($('boss-grow-pct').value)||10;
-  const sec=parseInt($('boss-grow-sec').value)||5;
+  const sec=parseInt(($('boss-fast-sec')&&$('boss-fast-sec').value)||localStorage.getItem('timer_fastSec')||5)||5;
   bossGrowScale*= (1+pct/100);
   bossFastUntil=performance.now()+sec*1000;
   applySizes();
   const mySeq=++growBadgeSeq;
   const bossBox=$('boss'), badge=$('status-badge');
   bossBox.classList.add('boss-grow');
-  badge.innerHTML='👹 Fast '+sec+'s<small id="status-time"></small>';
+  badge.innerHTML='👹 Fast<small id="status-time"></small>';
   badge.className=''; badge.id='status-badge';
   badge.classList.remove('hidden');
   setTimeout(()=>{
@@ -1519,25 +1535,78 @@ function renderGallery(){
   BOSS_CHOICES.forEach((c,i)=>{
     const d=document.createElement('div');
     d.className='pick'+(selBoss===c.src?' sel':'');
-    d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>';
+    d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>'
+      +(c.custom?'<button title="Delete this Boss" style="position:absolute;top:2px;right:2px;width:26px;height:26px;border-radius:50%;border:none;background:#c0392b;color:#fff;font-size:14px;cursor:pointer">✕</button>':'');
+    if(c.custom) d.style.position='relative';
     d.onclick=()=>{ selBoss=c.src; $('boss-url').value=''; rememberSetup(); renderGallery(); applySizes(); };
+    const delB=d.querySelector('button');
+    if(delB) delB.onclick=(e)=>{ e.stopPropagation(); delBoss(i); };
     bg.appendChild(d);
   });
   const hg=$('hero-gallery'); hg.innerHTML='';
   HERO_CHOICES.forEach((c,i)=>{
     const d=document.createElement('div');
     d.className='pick'+(selHero===c.src?' sel':'');
-    d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>';
+    d.innerHTML='<img src="'+c.src+'" alt="'+c.name+'"><div style="font-size:11px;text-align:center">'+c.name+'</div><div class="tick">✓</div>'
+      +(c.custom?'<button title="Delete this Player" style="position:absolute;top:2px;right:2px;width:26px;height:26px;border-radius:50%;border:none;background:#c0392b;color:#fff;font-size:14px;cursor:pointer">✕</button>':'');
+    if(c.custom) d.style.position='relative';
     d.onclick=()=>{ selHero=c.src; $('hero-url').value=''; rememberSetup(); renderGallery(); };
+    const delH=d.querySelector('button');
+    if(delH) delH.onclick=(e)=>{ e.stopPropagation(); delHero(i); };
     hg.appendChild(d);
   });
 // First paint (no combo gallery: flames are fixed power_up.gif)
 }
-function addPastedLinks(){
-  const b=$('boss-url').value.trim();
-  if(b && !BOSS_CHOICES.some(c=>c.src===b)) BOSS_CHOICES.push({name:'New link', src:b});
-  const h=$('hero-url').value.trim();
-  if(h && !HERO_CHOICES.some(c=>c.src===h)) HERO_CHOICES.push({name:'New link', src:h});
+// Add Boss / Player links (max 5 per gallery). Extra link = pick 1 old one to delete.
+function addBossLink(){
+  const v=$('boss-url').value.trim();
+  if(!v){ alert('Paste a Boss image link first!'); return; }
+  if(BOSS_CHOICES.some(c=>c.src===v)){ selBoss=v; $('boss-url').value=''; rememberSetup(); renderGallery(); applySizes(); return; }
+  if(BOSS_CHOICES.length>=MAX_FIGHTERS){
+    const list=BOSS_CHOICES.map((c,i)=>(i+1)+'. '+c.name).join('\n');
+    const pick=prompt('You already have 5 Boss images (max).\nType the number (1-5) to delete and make room:\n'+list);
+    if(pick===null) return;
+    const n=parseInt(pick);
+    if(!(n>=1&&n<=BOSS_CHOICES.length)){ alert('Nothing deleted.'); return; }
+    const gone=BOSS_CHOICES.splice(n-1,1)[0];
+    if(selBoss===gone.src) selBoss=BOSS_CHOICES[0].src;
+  }
+  BOSS_CHOICES.push({name:'Custom Boss', src:v, custom:true});
+  selBoss=v; $('boss-url').value='';
+  saveCustomFighters(); rememberSetup(); renderGallery(); applySizes();
+}
+function addHeroLink(){
+  const v=$('hero-url').value.trim();
+  if(!v){ alert('Paste a Player image link first!'); return; }
+  if(HERO_CHOICES.some(c=>c.src===v)){ selHero=v; $('hero-url').value=''; rememberSetup(); renderGallery(); return; }
+  if(HERO_CHOICES.length>=MAX_FIGHTERS){
+    const list=HERO_CHOICES.map((c,i)=>(i+1)+'. '+c.name).join('\n');
+    const pick=prompt('You already have 5 Player images (max).\nType the number (1-5) to delete and make room:\n'+list);
+    if(pick===null) return;
+    const n=parseInt(pick);
+    if(!(n>=1&&n<=HERO_CHOICES.length)){ alert('Nothing deleted.'); return; }
+    const gone=HERO_CHOICES.splice(n-1,1)[0];
+    if(selHero===gone.src) selHero=HERO_CHOICES[0].src;
+  }
+  HERO_CHOICES.push({name:'Custom Player', src:v, custom:true});
+  selHero=v; $('hero-url').value='';
+  saveCustomFighters(); rememberSetup(); renderGallery();
+}
+function delBoss(i){
+  const gone=BOSS_CHOICES[i];
+  if(!gone||!gone.custom) return;
+  if(!confirm('Delete "'+gone.name+'"?')) return;
+  BOSS_CHOICES.splice(i,1);
+  if(selBoss===gone.src) selBoss=BOSS_CHOICES[0].src;
+  saveCustomFighters(); rememberSetup(); renderGallery(); applySizes();
+}
+function delHero(i){
+  const gone=HERO_CHOICES[i];
+  if(!gone||!gone.custom) return;
+  if(!confirm('Delete "'+gone.name+'"?')) return;
+  HERO_CHOICES.splice(i,1);
+  if(selHero===gone.src) selHero=HERO_CHOICES[0].src;
+  saveCustomFighters(); rememberSetup(); renderGallery();
 }
 function toggleFlip(who){
   if(who==='boss'){ flipBoss=!flipBoss; $('boss-flip-state').textContent='State: '+(flipBoss?'on (faces right)':'off (faces left)'); $('boss').classList.toggle('mirrored', flipBoss); }
@@ -1553,6 +1622,7 @@ function toggleFlip(who){
   if($('boss')) $('boss').classList.toggle('mirrored', flipBoss);
   if($('hero')) $('hero').classList.toggle('mirrored', flipHero);
   if($('boss-rmwhite')) $('boss-rmwhite').checked=rmWhiteBoss;
+  if($('boss-fast-sec')) $('boss-fast-sec').value=localStorage.getItem('timer_fastSec')||'5';
   if($('donut-gif-url')) $('donut-gif-url').value=GIF_SET.donutUrl;
   if($('donut-gif-flip')) $('donut-gif-flip').checked=GIF_SET.donutFlip;
   if($('donut-gif-rmwhite')) $('donut-gif-rmwhite').checked=GIF_SET.donutRmwhite;
