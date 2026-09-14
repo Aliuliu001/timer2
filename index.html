@@ -324,7 +324,17 @@
   /* Mana sits right under its skill name (one compact caption), never drifting to the next skill */
   .skill-orb .scap,.food-card .scap{display:flex; flex-direction:column; align-items:flex-start; gap:2px; line-height:1.15; min-width:0}
   .skill-orb .sname,.food-card .sname{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px}
-  .skill-orb .mcost,.food-card .mcost{font-size:14px; font-weight:bold; color:#3a2b00; background:var(--gold); border-radius:999px; padding:1px 9px; flex-shrink:0; box-shadow:1px 1px 0 rgba(0,0,0,.55)}
+  /* Mana = round orb badge with the cosmic-ball picture, white number dead-center.
+     Dark navy ball + white digit = max contrast; glow rim matches the picture edge. */
+  .skill-orb .mcost,.food-card .mcost{
+    width:56px; height:56px; border-radius:50%; flex-shrink:0;
+    background:#101a3a url('assets/mana-orb.jpg') center/cover no-repeat;
+    border:2px solid rgba(123,97,255,.95);
+    box-shadow:0 0 12px rgba(0,229,255,.75), inset 0 0 10px rgba(0,0,0,.55);
+    color:#fff; font-size:25px; font-weight:bold; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    text-shadow:0 0 6px #000, 0 2px 2px #000;
+  }
   /* 3D atom: icon is the nucleus. 3 CONCENTRIC orbits, each tilted in its OWN
      plane (flat / upright / diagonal — like a universe symbol). Front half of
      each orbit passes IN FRONT of the icon, back half BEHIND it.
@@ -1132,7 +1142,7 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='skill-orb '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,30)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost">'+f.price+' ⚡</div></div>';
+    d.innerHTML=skillIconHtml(f,30)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost">'+f.price+'</div></div>';
     d.title=f.name+' ('+f.price+' mana)';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
     d.onclick=(function(id){ return function(){ castSkill(id,false); }; })(f.id);
@@ -1145,7 +1155,7 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='food-card '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,64)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost">'+(f.price||5)+' ⚡</div></div>';
+    d.innerHTML=skillIconHtml(f,64)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost">'+(f.price||5)+'</div></div>';
     d.title=f.name+' ('+(f.price||5)+' mana) — Boss sits and eats '+f.eatSeconds+'s';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
     d.onclick=(function(id){ return function(){ applyFood(id); }; })(f.id);
@@ -1173,7 +1183,7 @@ function renderSkillPick(){
       const d=document.createElement('div');
       d.className='food-card '+((f.enabled!==false)?'ready':'locked');
       // tick UNDER the skill: icon -> name+mana -> checkbox (saves horizontal space)
-      d.innerHTML=skillIconHtml(f,40)+'<div class="sname">'+f.icon+' '+f.name+'<br>'+(f.price||5)+' ⚡</div><label><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> use</label>';
+      d.innerHTML=skillIconHtml(f,40)+'<div class="sname">'+f.icon+' '+f.name+'<br>'+(f.price||5)+'</div><label><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> use</label>';
       d.querySelector('input').onchange=(e)=>{ f.enabled=e.target.checked; renderShop(); };
       d.onclick=(e)=>{ if(e.target.tagName!=='INPUT'){ f.enabled=!(f.enabled!==false); renderSkillPick(); renderShop(); } };
       fb.appendChild(d);
