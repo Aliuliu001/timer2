@@ -432,6 +432,7 @@
   #champ-table .cell-thumb img{max-width:32px; max-height:32px; object-fit:contain; border-radius:6px}
   #mode-timer-btn.active-mode{background:#27ae60 !important}
   #mode-champ-btn.active-mode{background:#27ae60 !important}
+  .btn-add.active{background:#27ae60 !important; color:#fff !important}
   /* Cards overlay: sits in arena above fighters, below clock */
   #champ-cards{position:absolute; left:0; right:0; top:64px; bottom:200px; display:flex; gap:12px; align-items:center; justify-content:center; z-index:30; pointer-events:none; padding:0 12px}
   #champ-cards.hidden{display:none !important}
@@ -487,6 +488,17 @@
     <button id="spb-keys" onclick="showPane('keys')">⌨ Keys</button>
   </div>
   <div class="setup-pane" id="sp-time">
+  <fieldset>
+    <legend>⚖️ Difficulty (applies to both Timer & Champion)</legend>
+    <div style="font-size:15px;color:#5c4a3a;margin-bottom:8px">Sets wrong penalty, food cost, freeze duration, combo threshold, Boss speed. Manual tweaks allowed after Apply.</div>
+    <div class="row">
+      <button class="btn-add" id="diff-easy" onclick="applyDifficulty('easy')">⭐ Easy</button>
+      <button class="btn-add" id="diff-normal" onclick="applyDifficulty('normal')">⭐⭐ Normal</button>
+      <button class="btn-add" id="diff-hard" onclick="applyDifficulty('hard')">⭐⭐⭐ Hard</button>
+      <button class="btn-add" id="diff-expert" onclick="applyDifficulty('expert')">⭐⭐⭐⭐ Expert</button>
+      <button class="btn-clear" onclick="resetDifficulty()">Reset to preset</button>
+    </div>
+  </fieldset>
   <h2>Time settings</h2>
   <div class="row preset" id="time-presets">
     <button onclick="setPreset(120,this)">2 min</button>
@@ -1085,6 +1097,38 @@ let bossEating=false;     // true while the eat gif shows
 let growBadgeSeq=0;       // invalidates old "+10% fast" hide timers when a new meal starts
 let eatSeq=0;              // invalidates old meal-end badge hides when a newer meal took over
 const MAX_GROW=2.0, MAX_FAST_MS=10000; // balance caps: max 200% size, max 10s stacked speed
+// Difficulty presets (Easy/Normal/Hard/Expert): wrongPenalty%, foodPrice, freezeSec, comboThreshold, bossSpeedMult
+const DIFFICULTY_PRESETS = {
+  easy:   {wrong:3, price:5, freeze:4, combo:5, speedMult:1.0, cardSec:4.0},
+  normal: {wrong:5, price:6, freeze:3, combo:5, speedMult:1.1, cardSec:3.5},
+  hard:   {wrong:8, price:7, freeze:2, combo:7, speedMult:1.3, cardSec:3.0},
+  expert: {wrong:10,price:8, freeze:1.5, combo:10, speedMult:1.5, cardSec:2.5}
+};
+let difficulty = localStorage.getItem('timer_difficulty') || 'normal';
+function applyDifficulty(level){
+  difficulty = level;
+  localStorage.setItem('timer_difficulty', level);
+  const preset = DIFFICULTY_PRESETS[level];
+  if(!preset) return;
+  // Apply to all food items
+  FOOD_ITEMS.forEach(f => {
+    f.price = preset.price;
+    if(f.after==='stop') f.extraSec = preset.freeze; // ice freeze duration
+    else if(f.afterFx==='ice') f.extraSec = preset.freeze;
+    else if(f.afterFx==='poison' || f.afterFx==='fire') f.extraSec = preset.freeze; // slow effects
+  });
+  // Update UI if on food tab
+  if($('dish-table')) renderDishTiming();
+  // Update difficulty display
+  ['easy','normal','hard','expert'].forEach(d => {
+    const btn = $('diff-'+d);
+    if(btn) btn.classList.toggle('active', d===level);
+  });
+  showComboPopup('Difficulty: '+level.toUpperCase()+' applied!');
+}
+function resetDifficulty(){
+  applyDifficulty(difficulty); // re-apply current preset (overwrite manual tweaks)
+}
 function playSfx(src){
   try{ const a=new Audio(src); a.volume=0.6; a.play().catch(()=>{}); }catch(e){}
 }
@@ -1188,7 +1232,10 @@ function updateGame(now){
   let speed=1;
   if(now<bossFrozenUntil) speed=0; else if(now<bossSlowUntil) speed=0.5;
   if(now<bossFastUntil && speed>0) speed=2;
-  bossProgress+= (dt/totalTimeMs)*100*speed;
+  // Boss speed scaled by difficulty
+  const preset = DIFFICULTY_PRESETS[difficulty];
+  const speedMult = preset ? preset.speedMult : 1.0;
+  bossProgress+= (dt/totalTimeMs)*100*speed*speedMult;
   updateGraphics();
   if(remainingTimeMs<=0){ remainingTimeMs=0; updateGraphics(); return triggerEnd(true); }
   if(bossProgress>=100){ bossProgress=100; updateGraphics(); return triggerEnd(false); }
@@ -1251,11 +1298,13 @@ function onCorrect(){
   if($('screen-arena').classList.contains('hidden')) return;
   mana=Math.min(10,mana+1); combo++; correctCount++;
   sfxCorrect(); updateMeters(); renderShop();
-  if(combo>=5){
+  const preset = DIFFICULTY_PRESETS[difficulty];
+  const comboThreshold = preset ? preset.combo : 5;
+  if(combo>=comboThreshold){
     combo=0; // free FOOD shot, does not cost mana
     updateMeters();
-    if(GIF_SET.donutOn===false){ showComboPopup('🎉 COMBO 5!'); }
-    else { showComboPopup('🎉 COMBO 5! Free Donut for Boss! 🍩'); throwRandomFood(); }
+    if(GIF_SET.donutOn===false){ showComboPopup('🎉 COMBO '+comboThreshold+'!'); }
+    else { showComboPopup('🎉 COMBO '+comboThreshold+'! Free Donut for Boss! 🍩'); throwRandomFood(); }
   }
 }
 // Floating combo popup: overlays the arena, never moves the layout.
@@ -1270,6 +1319,12 @@ function showComboPopup(text){
 function onWrong(){
   if($('screen-arena').classList.contains('hidden')) return;
   combo=0; wrongCount++; sfxWrong(); updateMeters(); renderShop();
+  // Wrong penalty: Boss leaps forward by difficulty%
+  const preset = DIFFICULTY_PRESETS[difficulty];
+  if(preset && preset.wrong > 0){
+    bossProgress = Math.min(100, bossProgress + preset.wrong);
+    showComboPopup('❌ Boss +'+preset.wrong+'%!');
+  }
 }
 function updateMeters(){
   document.querySelectorAll('#combo-flames img').forEach((im,i)=>im.classList.toggle('lit', i<combo));
@@ -1550,7 +1605,12 @@ function updateChampGame(now){
   let speed=1;
   if(now<bossFrozenUntil) speed=0; else if(now<bossSlowUntil) speed=0.5;
   if(now<bossFastUntil && speed>0) speed=2;
-  bossProgress+=(dt/CHAMP_WALK_MS)*100*speed;
+  // Champion: Boss speed = deck size × cardSec per difficulty
+  const preset = DIFFICULTY_PRESETS[difficulty];
+  const cardSec = preset ? preset.cardSec : 3.5;
+  const deckSize = champTarget || 1;
+  const champWalkMs = deckSize * cardSec * 1000;
+  bossProgress+=(dt/champWalkMs)*100*speed;
   updateGraphics();
   if(bossProgress>=100){ bossProgress=100; updateGraphics(); return triggerEnd(false); }
   animationFrameId=requestAnimationFrame(updateChampGame);
