@@ -93,7 +93,7 @@
   .table-wrap{overflow-x:auto; margin:10px 0; border-radius:14px; box-shadow:0 2px 8px rgba(92,74,58,.12)}
   .table-wrap::-webkit-scrollbar{height:10px; background:#e5ddd2}
   .table-wrap::-webkit-scrollbar-thumb{background:#5c4a3a; border-radius:5px}
-  #dish-table{border-collapse:collapse; width:100%; min-width:980px; background:#fff; font-size:15px}
+  #dish-table{border-collapse:collapse; width:100%; min-width:1060px; background:#fff; font-size:15px}
   #dish-table th{background:#5c4a3a; color:#fff; padding:12px 10px; font-size:15px; white-space:nowrap; position:sticky; top:0}
   #dish-table th:first-child{border-radius:14px 0 0 0}
   #dish-table th:last-child{border-radius:0 14px 0 0}
@@ -308,6 +308,11 @@
   #end-stats{color:#fff; font-size:18px; background:rgba(0,0,0,.6); border-radius:10px; padding:8px 18px}
   /* ---------- SKILL ORB (no frame: icon + atom rings only, like the picture) ---------- */
   #skill-shop{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+  #food-pick{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  #food-pick .food-card{flex-direction:column; align-items:center; text-align:center; min-width:104px; gap:4px; padding:8px 4px}
+  #food-pick .food-card .sname{white-space:normal; text-align:center}
+  #food-pick .food-card label{font-size:14px; margin-top:2px}
+  #food-pick .food-card input[type=checkbox]{width:22px; height:22px}
   .skill-orb,.food-card{
     flex:1 1 0; min-width:96px; display:flex; align-items:center; gap:6px;
     background:transparent; color:#222; border-radius:12px; padding:6px 2px;
@@ -441,10 +446,10 @@
   </fieldset>
   <fieldset>
     <legend>🍽️ Dish manager — one row per food (all remembered)</legend>
-    <div style="font-size:15px;color:#5c4a3a;margin-bottom:6px">Gif sec = seconds the eating gif shows (Boss hides). Extra = seconds after the gif: Boss returns in its after-state below.</div>
+    <div style="font-size:15px;color:#5c4a3a;margin-bottom:6px">Mana = cost per use (1–10). Gif sec = seconds the eating gif shows (Boss hides). Extra = seconds after the gif: Boss returns in its after-state below. 🍩 Donut row = free combo-5 gift — untick to disable it.</div>
     <div class="table-wrap"><table id="dish-table">
       <thead><tr>
-        <th>Use</th><th>Dish</th><th>Eat gif link</th><th>Gif<br>sec</th>
+        <th>Use</th><th>Dish</th><th>Mana</th><th>Eat gif link</th><th>Gif<br>sec</th>
         <th>After gif,<br>Boss…</th><th>Extra<br>look</th><th>Extra<br>sec</th>
         <th>Pretty image<br>(extra look)</th><th>Remove<br>white</th><th>Flip</th><th></th>
       </tr></thead>
@@ -459,6 +464,7 @@
   </fieldset>
   <fieldset>
     <legend>Combo Donut gif (remembered)</legend>
+    <label><input type="checkbox" id="donut-on" checked onchange="toggleDonutOn(this.checked)"> Use combo-5 free Donut gift (untick = easier game, combo 5 gives nothing)</label><br>
     <label>Combo Donut gif link: <input type="text" id="donut-gif-url" placeholder="https://... (default built-in)" style="width:260px"></label>
     <div class="row">
       <label><input type="checkbox" id="donut-gif-rmwhite" checked> Remove white background</label>
@@ -644,7 +650,8 @@ const FOOD_ITEMS = [
 const GIF_SET = {
   donutUrl: localStorage.getItem('timer_donut_url') || '',
   donutFlip: localStorage.getItem('timer_donut_flip')!=='0',
-  donutRmwhite: localStorage.getItem('timer_donut_rmwhite')!=='0'
+  donutRmwhite: localStorage.getItem('timer_donut_rmwhite')!=='0',
+  donutOn: localStorage.getItem('timer_combo_on')!=='0'
 };
 (function restoreDishes(){
   try{
@@ -653,19 +660,27 @@ const GIF_SET = {
       const f=FOOD_ITEMS.find(x=>x.id===s.id); if(!f) continue;
       const keepUrl=s.gifUrl&&s.gifUrl.trim()&&s.gifUrl.indexOf('pinimg.com')<0;
       const keepImg=s.afterImg&&s.afterImg.trim()&&s.afterImg.indexOf('pinimg.com')<0;
-      Object.assign(f, {gifSec:s.gifSec??f.gifSec, extraSec:s.extraSec??f.extraSec, gifUrl:keepUrl?s.gifUrl:f.gifUrl, gifFlip:!!s.gifFlip, gifRmwhite:s.gifRmwhite!==false, after:s.after||f.after, afterFx:s.afterFx||f.afterFx, afterImg:keepImg?s.afterImg:f.afterImg});
+      Object.assign(f, {price:(s.price>=1&&s.price<=10)?s.price:f.price, gifSec:s.gifSec??f.gifSec, extraSec:s.extraSec??f.extraSec, gifUrl:keepUrl?s.gifUrl:f.gifUrl, gifFlip:!!s.gifFlip, gifRmwhite:s.gifRmwhite!==false, after:s.after||f.after, afterFx:s.afterFx||f.afterFx, afterImg:keepImg?s.afterImg:f.afterImg});
     }
     const custom=JSON.parse(localStorage.getItem('timer_custom_dishes')||'[]');
-    for(const c of custom){ if(!FOOD_ITEMS.some(x=>x.id===c.id)) FOOD_ITEMS.push(c); }
+    for(const c of custom){ if(c.price==null) c.price=5; if(!FOOD_ITEMS.some(x=>x.id===c.id)) FOOD_ITEMS.push(c); }
   }catch(e){}
 })();
 function saveDishes(){
-  localStorage.setItem('timer_dishes', JSON.stringify(FOOD_ITEMS.map(f=>({id:f.id,gifSec:f.gifSec,extraSec:f.extraSec,gifUrl:f.gifUrl||'',gifFlip:!!f.gifFlip,gifRmwhite:f.gifRmwhite!==false,after:f.after||'normal',afterFx:f.afterFx||'none',afterImg:f.afterImg||''}))));
+  localStorage.setItem('timer_dishes', JSON.stringify(FOOD_ITEMS.map(f=>({id:f.id,price:f.price||5,gifSec:f.gifSec,extraSec:f.extraSec,gifUrl:f.gifUrl||'',gifFlip:!!f.gifFlip,gifRmwhite:f.gifRmwhite!==false,after:f.after||'normal',afterFx:f.afterFx||'none',afterImg:f.afterImg||''}))));
   localStorage.setItem('timer_custom_dishes', JSON.stringify(FOOD_ITEMS.filter(f=>f.custom)));
 }
 function dishGifSrc(f){ return f.gifUrl || EAT_IMAGE; }
 function donutGifSrc(){ return GIF_SET.donutUrl || DONUT_IMAGE; }
+function toggleDonutOn(on){
+  GIF_SET.donutOn=!!on;
+  localStorage.setItem('timer_combo_on', GIF_SET.donutOn?'1':'0');
+  renderDishTiming(); renderSkillPick();
+}
 function saveGifSettings(){
+  GIF_SET.donutOn=$('donut-on')?$('donut-on').checked:true;
+  localStorage.setItem('timer_combo_on', GIF_SET.donutOn?'1':'0');
+  renderDishTiming(); renderSkillPick();
   GIF_SET.donutUrl=$('donut-gif-url').value.trim();
   GIF_SET.donutFlip=$('donut-gif-flip').checked;
   GIF_SET.donutRmwhite=$('donut-gif-rmwhite').checked;
@@ -705,6 +720,24 @@ function hideEatFrame(){
 // Dish manager: one table row per food (Yugioh-tag style). All changes auto-save.
 function renderDishTiming(){
   const box=$('dish-timing'); if(!box) return; box.innerHTML='';
+  // Donut row: free combo-5 gift (toggle = difficulty control)
+  const dtr=document.createElement('tr');
+  dtr.style.background='#fff7e8';
+  dtr.innerHTML='<td><input type="checkbox" id="donut-row-on" '+(GIF_SET.donutOn!==false?'checked':'')+' title="Combo-5 free Donut on/off"></td>'
+    +'<td><b>🍩 Donut</b><br><span style="font-size:13px;color:#5c4a3a">free combo-5 gift</span></td>'
+    +'<td style="font-size:14px;color:#5c4a3a">Free</td>'
+    +'<td><input type="text" id="donut-row-url" value="'+(GIF_SET.donutUrl||'')+'" placeholder="https://... (empty = default)"></td>'
+    +'<td style="font-size:14px">3</td>'
+    +'<td colspan="3" style="font-size:14px;color:#5c4a3a">plain eating, no extra look</td>'
+    +'<td><input type="checkbox" id="donut-row-rmwhite" '+(GIF_SET.donutRmwhite!==false?'checked':'')+'></td>'
+    +'<td><input type="checkbox" id="donut-row-flip" '+(GIF_SET.donutFlip?'checked':'')+'></td>'
+    +'<td></td>';
+  box.appendChild(dtr);
+  const dOn=$('donut-row-on'), dUrl=$('donut-row-url'), dRw=$('donut-row-rmwhite'), dFl=$('donut-row-flip');
+  if(dOn) dOn.onchange=()=>{ GIF_SET.donutOn=dOn.checked; localStorage.setItem('timer_combo_on', GIF_SET.donutOn?'1':'0'); if($('donut-on')) $('donut-on').checked=GIF_SET.donutOn; renderSkillPick(); };
+  if(dUrl) dUrl.onchange=()=>{ GIF_SET.donutUrl=dUrl.value.trim(); localStorage.setItem('timer_donut_url', GIF_SET.donutUrl); if($('donut-gif-url')) $('donut-gif-url').value=GIF_SET.donutUrl; };
+  if(dRw) dRw.onchange=()=>{ GIF_SET.donutRmwhite=dRw.checked; localStorage.setItem('timer_donut_rmwhite', GIF_SET.donutRmwhite?'1':'0'); };
+  if(dFl) dFl.onchange=()=>{ GIF_SET.donutFlip=dFl.checked; localStorage.setItem('timer_donut_flip', GIF_SET.donutFlip?'1':'0'); };
   for(const f of FOOD_ITEMS){
     const tr=document.createElement('tr');
     const prev=f.gifUrl?'<img class="dish-preview" src="'+f.gifUrl+'">':'<span class="dish-preview" style="font-size:32px;text-align:center;line-height:56px;display:inline-block">'+f.icon+'</span>';
@@ -712,6 +745,7 @@ function renderDishTiming(){
     const fxSel=AFTERFX_OPTS.map(o=>'<option value="'+o[0]+'"'+(f.afterFx===o[0]?' selected':'')+'>'+o[1]+'</option>').join('');
     tr.innerHTML='<td><input type="checkbox" data-dish="'+f.id+'" data-k="enabled" '+((f.enabled!==false)?'checked':'')+' title="Use in game"></td>'
       +'<td><b>'+f.icon+' '+f.name+'</b><br>'+prev+'</td>'
+      +'<td><input type="number" data-dish="'+f.id+'" data-k="price" value="'+(f.price||5)+'" min="1" max="10" style="width:56px"></td>'
       +'<td><input type="text" data-dish="'+f.id+'" data-k="gifUrl" value="'+(f.gifUrl||'')+'" placeholder="https://... (empty = default)"></td>'
       +'<td><input type="number" data-dish="'+f.id+'" data-k="gifSec" value="'+f.gifSec+'" min="1" max="15"></td>'
       +'<td><select data-dish="'+f.id+'" data-k="after">'+afterSel+'</select></td>'
@@ -733,6 +767,7 @@ function renderDishTiming(){
       }
       else if(k==='gifUrl'||k==='afterImg'||k==='after'||k==='afterFx') f[k]=inp.value.trim();
       else if(k==='gifSec') f.gifSec=Math.max(1,parseInt(inp.value)||f.gifSec);
+      else if(k==='price'){ f.price=Math.max(1,Math.min(10,parseInt(inp.value)||5)); renderShop(); }
       else if(k==='extraSec') f.extraSec=Math.max(0,parseInt(inp.value)||0);
       saveDishes(); renderDishTiming();
     };
@@ -948,8 +983,8 @@ function onCorrect(){
   if(combo>=5){
     combo=0; // free FOOD shot, does not cost mana
     updateMeters();
-    showComboPopup('🎉 COMBO 5! Free Donut for Boss! 🍩');
-    throwRandomFood();
+    if(GIF_SET.donutOn===false){ showComboPopup('🎉 COMBO 5!'); }
+    else { showComboPopup('🎉 COMBO 5! Free Donut for Boss! 🍩'); throwRandomFood(); }
   }
 }
 // Floating combo popup: overlays the arena, never moves the layout.
@@ -1010,8 +1045,8 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='food-card '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,64)+'<div class="sname">'+f.name+'</div><div class="mcost">'+f.price+'</div>';
-    d.title=f.name+' ('+f.price+' mana) — Boss sits and eats '+f.eatSeconds+'s';
+    d.innerHTML=skillIconHtml(f,64)+'<div class="sname">'+f.name+'</div><div class="mcost">'+(f.price||5)+' ⚡</div>';
+    d.title=f.name+' ('+(f.price||5)+' mana) — Boss sits and eats '+f.eatSeconds+'s';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
     d.onclick=(function(id){ return function(){ applyFood(id); }; })(f.id);
     fs.appendChild(d);
@@ -1033,11 +1068,12 @@ function renderSkillPick(){
   }
   const fb=$('food-pick'); if(fb){
     fb.innerHTML='';
-    fb.style.display='flex'; fb.style.gap='6px'; fb.style.flexWrap='wrap';
+    fb.style.display='flex'; fb.style.gap='8px'; fb.style.flexWrap='wrap';
     for(const f of FOOD_ITEMS){
       const d=document.createElement('div');
       d.className='food-card '+((f.enabled!==false)?'ready':'locked');
-      d.innerHTML=skillIconHtml(f,30)+'<div class="sname">'+f.name+'</div><label style="font-size:12px"><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> use</label>';
+      // tick UNDER the skill: icon -> name+mana -> checkbox (saves horizontal space)
+      d.innerHTML=skillIconHtml(f,40)+'<div class="sname">'+f.icon+' '+f.name+'<br>'+(f.price||5)+' ⚡</div><label><input type="checkbox" '+((f.enabled!==false)?'checked':'')+'> use</label>';
       d.querySelector('input').onchange=(e)=>{ f.enabled=e.target.checked; renderShop(); };
       d.onclick=(e)=>{ if(e.target.tagName!=='INPUT'){ f.enabled=!(f.enabled!==false); renderSkillPick(); renderShop(); } };
       fb.appendChild(d);
@@ -1060,7 +1096,7 @@ function castSkill(id, free){
   const f=HERO_SKILLS.find(x=>x.id===id); if(!f) return;
   if(f.enabled===false){ alert('This skill is unticked (off)!'); return; }
   if(!free){
-    if(mana<f.price){ alert('Need 5 mana!'); return; }
+    if(mana<f.price){ alert('Need '+f.price+' mana!'); return; }
     mana-=f.price;
   }
   updateMeters(); renderShop();
@@ -1239,7 +1275,7 @@ function bossGrow(){
 function applyFood(id){
   const f=FOOD_ITEMS.find(x=>x.id===id); if(!f) return;
   if(f.enabled===false){ alert('This dish is unticked (off)!'); return; }
-  if(mana<f.price){ alert('Need 5 mana!'); return; }
+  if(mana<f.price){ alert('Need '+f.price+' mana!'); return; }
   mana-=f.price;
   updateMeters(); renderShop();
   if(bossEating){ foodQueue.push(f); showComboPopup('⏳ '+f.name+' queued!'); return; }
@@ -1299,7 +1335,7 @@ function throwFood(f, free){
     bossFrozenUntil=now+gifSec*1000;
     love.classList.add('hidden'); love.innerHTML='I love you, Ms. Vi'; stopMsVi();
     if(f.id==='teacher'){ showMsVi(bossBox, gifSec*1000); }
-    badge.innerHTML=f.icon+' '+f.name+'<small id="status-time"></small>';
+    badge.innerHTML=(f.id==='teacher'?'Ms. Vi 💕':(f.icon+' '+f.name))+'<small id="status-time"></small>';
     badge.className=''; badge.id='status-badge';
     if(f.fx==='freeze'||f.fx==='burn'||f.fx==='poison') badge.classList.add('fx-'+f.fx);
     badge.classList.remove('hidden');
@@ -1366,7 +1402,7 @@ function showMsVi(bossBox, totalMs){
   function one(){
     const s=document.createElement('div');
     s.className='msvi-float'; s.textContent='Ms. Vi 💕';
-    s.style.left=cx+'px'; s.style.top=(top-6)+'px';
+    s.style.left=cx+'px'; s.style.top=(top+fr.height*0.33)+'px';
     arena.appendChild(s);
     const dx=fanDx[k%fanDx.length]; k++;
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -1520,6 +1556,7 @@ function toggleFlip(who){
   if($('donut-gif-url')) $('donut-gif-url').value=GIF_SET.donutUrl;
   if($('donut-gif-flip')) $('donut-gif-flip').checked=GIF_SET.donutFlip;
   if($('donut-gif-rmwhite')) $('donut-gif-rmwhite').checked=GIF_SET.donutRmwhite;
+  if($('donut-on')) $('donut-on').checked=GIF_SET.donutOn!==false;
   renderDishTiming();
 })();
 const COMBO_FLAMES = ['assets/power_up.gif','assets/power_up.gif','assets/power_up.gif','assets/power_up.gif','assets/power_up.gif'];
