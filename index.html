@@ -249,6 +249,7 @@
   /* Control deck: mana row centered, big flames */
   #meter-row{display:flex; justify-content:center; align-items:center}
   #mana-label{font-weight:bold; font-size:18px; display:flex; align-items:center; gap:8px}
+  #mana-count{font-size:24px; color:var(--gold); text-shadow:1px 1px 0 #000; min-width:64px; text-align:center}
   #combo-flames img{width:62px !important; height:62px !important}
   /* combo-banner styled as floating popup in FLAT DESIGN block */
   /* Food row: big icons 250% (atom 110px), fixed height single row, no jump */
@@ -324,17 +325,29 @@
   /* Mana sits right under its skill name (one compact caption), never drifting to the next skill */
   .skill-orb .scap,.food-card .scap{display:flex; flex-direction:column; align-items:flex-start; gap:2px; line-height:1.15; min-width:0}
   .skill-orb .sname,.food-card .sname{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px}
-  /* Mana = round orb badge with the cosmic-ball picture, white number dead-center.
-     Dark navy ball + white digit = max contrast; glow rim matches the picture edge. */
+  /* Mana = 3D jewel orb, white number dead-center. Each skill tone has its own
+     jewel colour (Ms. Vi keeps her fixed picture orb). Dark jewel + white digit
+     + top-left gloss highlight = max contrast. */
   .skill-orb .mcost,.food-card .mcost{
-    width:56px; height:56px; border-radius:50%; flex-shrink:0;
-    background:#101a3a url('assets/mana-orb.jpg') center/cover no-repeat;
-    border:2px solid rgba(123,97,255,.95);
-    box-shadow:0 0 12px rgba(0,229,255,.75), inset 0 0 10px rgba(0,0,0,.55);
+    width:56px; height:56px; border-radius:50%; flex-shrink:0; position:relative;
+    border:2px solid rgba(255,255,255,.75);
     color:#fff; font-size:25px; font-weight:bold; line-height:1;
     display:flex; align-items:center; justify-content:center;
-    text-shadow:0 0 6px #000, 0 2px 2px #000;
+    text-shadow:0 2px 3px rgba(0,0,0,.8);
   }
+  .skill-orb .mcost::before,.food-card .mcost::before{
+    content:''; position:absolute; top:6px; left:9px; width:16px; height:10px;
+    border-radius:50%; background:rgba(255,255,255,.75); filter:blur(1px);
+    transform:rotate(-25deg); pointer-events:none;
+  }
+  /* per-skill jewel tones: light top -> saturated base -> dark rim */
+  .mcost.orb-eat   {background:radial-gradient(circle at 32% 28%, #ffe9b0 0%, #f5a623 38%, #b35a00 75%, #5e2d00 100%); box-shadow:0 0 12px rgba(245,166,35,.8), inset 0 -6px 12px rgba(0,0,0,.45)}
+  .mcost.orb-freeze{background:radial-gradient(circle at 32% 28%, #e8fbff 0%, #4fc3f7 38%, #0277bd 75%, #012f4d 100%); box-shadow:0 0 12px rgba(79,195,247,.8), inset 0 -6px 12px rgba(0,0,0,.45)}
+  .mcost.orb-burn  {background:radial-gradient(circle at 32% 28%, #ffd9c9 0%, #ff6b35 38%, #c1272d 75%, #4d0800 100%); box-shadow:0 0 12px rgba(255,107,53,.85), inset 0 -6px 12px rgba(0,0,0,.45)}
+  .mcost.orb-poison{background:radial-gradient(circle at 32% 28%, #e4ffd6 0%, #66bb44 38%, #2d7a1f 75%, #0c330a 100%); box-shadow:0 0 12px rgba(102,187,68,.8), inset 0 -6px 12px rgba(0,0,0,.45)}
+  .mcost.orb-donut {background:radial-gradient(circle at 32% 28%, #ffe0f1 0%, #f06292 38%, #a51c5b 75%, #470a28 100%); box-shadow:0 0 12px rgba(240,98,146,.8), inset 0 -6px 12px rgba(0,0,0,.45)}
+  /* Ms. Vi fixed picture orb — untouched by the jewel recolour */
+  .mcost.orb-fixed{background:#101a3a url('assets/mana-orb.jpg') center/cover no-repeat; box-shadow:0 0 12px rgba(0,229,255,.75), inset 0 0 10px rgba(0,0,0,.55)}
   /* 3D atom: icon is the nucleus. 3 CONCENTRIC orbits, each tilted in its OWN
      plane (flat / upright / diagonal — like a universe symbol). Front half of
      each orbit passes IN FRONT of the icon, back half BEHIND it.
@@ -566,7 +579,7 @@
       <button id="btn-wrong" onclick="onWrong()">✗ WRONG</button>
     </div>
     <div id="meter-row">
-      <div id="mana-label">Mana <span id="combo-flames"><img data-i="0" src="assets/power_up.gif" alt="combo"><img data-i="1" src="assets/power_up.gif" alt="combo"><img data-i="2" src="assets/power_up.gif" alt="combo"><img data-i="3" src="assets/power_up.gif" alt="combo"><img data-i="4" src="assets/power_up.gif" alt="combo"></span></div>
+      <div id="mana-label">Mana <span id="mana-count">0/10</span><span id="combo-flames"><img data-i="0" src="assets/power_up.gif" alt="combo"><img data-i="1" src="assets/power_up.gif" alt="combo"><img data-i="2" src="assets/power_up.gif" alt="combo"><img data-i="3" src="assets/power_up.gif" alt="combo"><img data-i="4" src="assets/power_up.gif" alt="combo"></span></div>
     </div>
     <!-- SHOP: skill orbs + food cards -->
     <div id="shop"></div>
@@ -1104,6 +1117,7 @@ function onWrong(){
 }
 function updateMeters(){
   document.querySelectorAll('#combo-flames img').forEach((im,i)=>im.classList.toggle('lit', i<combo));
+  const mc=$('mana-count'); if(mc) mc.textContent=mana+'/10';
 }
 // Keyboard + mouse-zone inputs (same core as buttons).
 document.addEventListener('keydown', e=>{
@@ -1135,6 +1149,15 @@ function skillIconHtml(f, size){
   }
   return '<div class="'+atomCls+'">'+inner+'<span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span></div>';
 }
+/* Mana orb colour per dish: Teacher keeps her fixed picture orb. */
+function orbClass(f){
+  if(!f||f.id==='teacher') return 'orb-fixed';
+  if(f.id==='donut') return 'orb-donut';
+  if(f.fx==='freeze') return 'orb-freeze';
+  if(f.fx==='burn') return 'orb-burn';
+  if(f.fx==='poison') return 'orb-poison';
+  return 'orb-eat'; // pizza, noodles + any new dish default to golden jewel
+}
 function renderShop(){
   const shop=$('shop'); if(!shop) return; shop.innerHTML='';
   for(const f of HERO_SKILLS){
@@ -1142,7 +1165,7 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='skill-orb '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,30)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost">'+f.price+'</div></div>';
+    d.innerHTML=skillIconHtml(f,30)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost '+orbClass(f)+'">'+f.price+'</div></div>';
     d.title=f.name+' ('+f.price+' mana)';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
     d.onclick=(function(id){ return function(){ castSkill(id,false); }; })(f.id);
@@ -1155,7 +1178,7 @@ function renderShop(){
     const ready=mana>=f.price;
     const d=document.createElement('div');
     d.className='food-card '+(ready?'ready':'locked');
-    d.innerHTML=skillIconHtml(f,64)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost">'+(f.price||5)+'</div></div>';
+    d.innerHTML=skillIconHtml(f,64)+'<div class="scap"><div class="sname">'+f.name+'</div><div class="mcost '+orbClass(f)+'">'+(f.price||5)+'</div></div>';
     d.title=f.name+' ('+(f.price||5)+' mana) — Boss sits and eats '+f.eatSeconds+'s';
     d.style.pointerEvents='auto'; d.style.cursor='pointer';
     d.onclick=(function(id){ return function(){ applyFood(id); }; })(f.id);
