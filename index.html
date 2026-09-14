@@ -1083,6 +1083,7 @@ let correctCount=0, wrongCount=0, skillsCast=0, foodsEaten=0;
 let foodQueue=[];         // dishes thrown while Boss is eating wait here — nothing is lost
 let bossEating=false;     // true while the eat gif shows
 let growBadgeSeq=0;       // invalidates old "+10% fast" hide timers when a new meal starts
+let eatSeq=0;              // invalidates old meal-end badge hides when a newer meal took over
 const MAX_GROW=2.0, MAX_FAST_MS=10000; // balance caps: max 200% size, max 10s stacked speed
 function playSfx(src){
   try{ const a=new Audio(src); a.volume=0.6; a.play().catch(()=>{}); }catch(e){}
@@ -2040,6 +2041,7 @@ function throwFood(f, free){
   function startEating(){
     proj.classList.add('hidden'); proj.style.transition='';
     const now=performance.now();
+    const myMeal=++eatSeq; // this meal owns the badge until its end (or a newer meal)
     const bossBox=$('boss'), badge=$('status-badge'), love=$('love-text');
     const gifSec=f.gifSec||f.eatSeconds, extraSec=f.extraSec||0;
     // STAGE 1: gif shows (Boss hides) + frame takes dish colour + live FX at Boss spot right away
@@ -2065,7 +2067,13 @@ function throwFood(f, free){
       const t2=performance.now(), dur=(extraSec>0?extraSec:2.5)*1000;
       applyAfterState(f, t2);
       bossGrow(f);
-      setTimeout(()=>{ clearAfterState(f); bossEating=false; serveNextInQueue(); }, Math.max(extraSec*1000, 2500));
+      setTimeout(()=>{ 
+        clearAfterState(f); 
+        bossEating=false; 
+        // Hide the badge ONLY if this meal still owns it (no newer meal took over)
+        if(myMeal===eatSeq) $('status-badge').classList.add('hidden');
+        serveNextInQueue(); 
+      }, Math.max(extraSec*1000, 2500));
     }, gifSec*1000);
   }
 }
@@ -2176,6 +2184,7 @@ function throwRandomFood(){
     proj.style.left=(hit.x-60)+'px'; proj.style.top=(hit.y-60)+'px';
     setTimeout(()=>{
     proj.classList.add('hidden'); proj.style.transition='';
+    const myMeal=++eatSeq; // donut owns the badge until its end
     const badge=$('status-badge');
     showEatFrame(donutGifSrc(), GIF_SET.donutFlip, GIF_SET.donutRmwhite, 'donut');
     playYummyLoop(3000);
@@ -2183,7 +2192,15 @@ function throwRandomFood(){
     badge.innerHTML='🍩 Donut!<small id="status-time"></small>';
     badge.className=''; badge.id='status-badge';
     badge.classList.remove('hidden');
-    setTimeout(()=>{ hideEatFrame(); stopYummyLoop(); playEatSfx('gulp'); bossGrow({after:'fast'}); bossEating=false; serveNextInQueue(); }, 3000);
+    setTimeout(()=>{ 
+      hideEatFrame(); 
+      stopYummyLoop(); 
+      playEatSfx('gulp'); 
+      bossGrow({after:'fast'}); 
+      bossEating=false; 
+      if(myMeal===eatSeq) badge.classList.add('hidden');
+      serveNextInQueue(); 
+    }, 3000);
     }, 60);
   }
   requestAnimationFrame(stepArc);
