@@ -455,6 +455,34 @@
   body.champ-play #judge-row{display:none}
   body.champ-play #food-shop{height:96px; min-height:96px; max-height:96px}
   body.champ-play #clock-display{display:none}
+  /* Champion full-arena: deck gone, arena takes its space */
+  body.champ-play #deck{display:none !important}
+  body.champ-play #screen-arena{height:calc(100% - 70px)}
+  body.champ-play #arena{flex:1; min-height:420px}
+  /* Fighters to the bottom */
+  body.champ-play #boss, body.champ-play #hero{bottom:8px}
+  /* Cards directly under the timebar */
+  body.champ-play #champ-cards{top:8px; bottom:auto; max-height:38%; align-items:flex-start}
+  /* Food column: vertical, above Player, pale-unless-affordable */
+  #champ-food-col{position:absolute; z-index:40; display:flex; flex-direction:column; gap:6px; align-items:center}
+  #champ-food-col.hidden{display:none !important}
+  #champ-food-col .food-card{background:transparent; border:none; opacity:.35; filter:grayscale(.8); display:flex; align-items:center; gap:4px; cursor:pointer}
+  #champ-food-col .food-card.ready{opacity:1; filter:none; box-shadow:0 0 14px rgba(255,212,59,.95); border-radius:12px; background:rgba(0,0,0,.35)}
+  /* Combo star: 5 flames in star positions, fire lines, full-5 flash */
+  #champ-combo-star{position:absolute; width:120px; height:120px; z-index:39; pointer-events:none}
+  #champ-combo-star.hidden{display:none !important}
+  #champ-combo-star img{position:absolute; width:34px; height:34px; object-fit:contain; filter:grayscale(1); opacity:.35}
+  #champ-combo-star img.lit{filter:none; opacity:1; drop-shadow:0 0 8px #ff922b}
+  #champ-combo-star img[data-i="0"]{left:43px; top:0}
+  #champ-combo-star img[data-i="1"]{left:86px; top:32px}
+  #champ-combo-star img[data-i="2"]{left:69px; top:86px}
+  #champ-combo-star img[data-i="3"]{left:17px; top:86px}
+  #champ-combo-star img[data-i="4"]{left:0; top:32px}
+  #star-lines{position:absolute; inset:0; width:100%; height:100%}
+  #star-lines line{stroke:#ff922b; stroke-width:3; opacity:0; filter:drop-shadow(0 0 4px #ffb347)}
+  #star-lines line.lit{opacity:1}
+  #champ-combo-star.star-full{animation:starFlash .6s ease-out}
+  @keyframes starFlash{0%{filter:brightness(1)}30%{filter:brightness(2.2) drop-shadow(0 0 24px #ffd43b)}100%{filter:brightness(1)}}
 </style>
 </head>
 <body>
@@ -715,6 +743,15 @@
     <div id="eat-frame" class="hidden"><img id="eat-gif" alt="eating"><span id="eat-fx-badge"></span></div>
     <div id="love-text" class="hidden">I love you, Ms. Vi</div>
     <div id="champ-cards" class="hidden"></div>
+    <div id="champ-food-col" class="hidden"></div>
+    <div id="champ-combo-star" class="hidden">
+      <svg id="star-lines" viewBox="0 0 120 120" preserveAspectRatio="none"></svg>
+      <img data-i="0" src="assets/power_up.gif" alt="combo">
+      <img data-i="1" src="assets/power_up.gif" alt="combo">
+      <img data-i="2" src="assets/power_up.gif" alt="combo">
+      <img data-i="3" src="assets/power_up.gif" alt="combo">
+      <img data-i="4" src="assets/power_up.gif" alt="combo">
+    </div>
   </div>
 
   <div id="deck">
@@ -820,6 +857,7 @@ function applySizes(){
   if(sb) sb.style.bottom=(50+bw)+'px';
   const lt=$('love-text');
   if(lt) lt.style.bottom=(70+bw)+'px';
+  positionChampOverlays();
 }
 // Pixel-based walk: Boss can never leave the arena or overlap Hero at start.
 function bossRange(){
@@ -1229,6 +1267,8 @@ function startArena(){
   // Timer mode: never show Champion cards/clock state
   document.body.classList.remove('champ-play');
   if($('champ-cards')){ $('champ-cards').innerHTML=''; $('champ-cards').classList.add('hidden'); }
+  if($('champ-food-col')){ $('champ-food-col').innerHTML=''; $('champ-food-col').classList.add('hidden'); }
+  if($('champ-combo-star')){ $('champ-combo-star').classList.remove('star-full'); $('champ-combo-star').classList.add('hidden'); }
   const h=parseInt($('input-h').value)||0, m=parseInt($('input-m').value)||0, s=parseInt($('input-s').value)||0;
   totalTimeMs=(h*3600+m*60+s)*1000;
   if(totalTimeMs<=0){ alert('Please enter a time greater than 0!'); return; }
@@ -1323,6 +1363,7 @@ function updateGraphics(){
     else if(now<bossFastUntil) st.textContent=Math.ceil((bossFastUntil-now)/1000);
     else st.textContent='';
   }
+  positionChampOverlays();
 }
 function pauseGame(){
   isRunning=false; cancelAnimationFrame(animationFrameId);
@@ -1360,7 +1401,16 @@ function onCorrect(){
   if(combo>=comboThreshold){
     combo=0; // free FOOD shot, does not cost mana
     updateMeters();
-    if(GIF_SET.donutOn===false){ showComboPopup('🎉 COMBO '+comboThreshold+'!'); }
+    if(isChampMode()){
+      const star=$('champ-combo-star');
+      if(star){ star.classList.remove('star-full'); void star.offsetWidth; star.classList.add('star-full'); }
+      updateChampStar();
+      setTimeout(()=>{
+        if(GIF_SET.donutOn===false){ showComboPopup('🎉 COMBO '+comboThreshold+'!'); }
+        else { showComboPopup('🎉 COMBO '+comboThreshold+'! Free Donut for Boss! 🍩'); throwRandomFood(); }
+      }, 600);
+    }
+    else if(GIF_SET.donutOn===false){ showComboPopup('🎉 COMBO '+comboThreshold+'!'); }
     else { showComboPopup('🎉 COMBO '+comboThreshold+'! Free Donut for Boss! 🍩'); throwRandomFood(); }
   }
 }
@@ -1383,9 +1433,45 @@ function onWrong(){
     showComboPopup('❌ Boss +'+preset.wrong+'%!');
   }
 }
+function isChampMode(){ return typeof gameMode!=='undefined'&&gameMode==='champion'&&document.body.classList.contains('champ-play'); }
 function updateMeters(){
+  if(isChampMode()){ updateChampStar(); return; }
   document.querySelectorAll('#combo-flames img').forEach((im,i)=>im.classList.toggle('lit', i<combo));
   const mc=$('mana-count'); if(mc) mc.textContent=mana+'/10';
+  const mr=$('meter-row'); if(mr) mr.style.display='';
+}
+function updateChampStar(){
+  const star=$('champ-combo-star'); if(!star) return;
+  star.querySelectorAll('img').forEach((im,i)=>im.classList.toggle('lit', i<combo));
+  // fire lines connect lit flames in star order 0-1-2-3-4-0
+  const svg=$('star-lines'); if(!svg) return;
+  const pts=[[60,17],[103,49],[86,103],[34,103],[17,49]];
+  const order=[0,1,2,3,4,0];
+  svg.innerHTML='';
+  for(let k=0;k<5;k++){
+    const a=pts[order[k]], b=pts[order[k+1]];
+    const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+    ln.setAttribute('x1',a[0]); ln.setAttribute('y1',a[1]);
+    ln.setAttribute('x2',b[0]); ln.setAttribute('y2',b[1]);
+    if(combo>k) ln.setAttribute('class','lit');
+    svg.appendChild(ln);
+  }
+}
+function positionChampOverlays(){
+  if(!isChampMode()) return;
+  const hero=$('hero'), col=$('champ-food-col'), star=$('champ-combo-star');
+  if(!hero) return;
+  const hx=hero.offsetLeft||0, hw=hero.offsetWidth||0, hh=hero.offsetHeight||0;
+  if(col && !col.classList.contains('hidden')){
+    col.style.left=(hx+hw/2-30)+'px';
+    col.style.bottom=(8+hh+8)+'px';
+    col.style.top='auto';
+  }
+  if(star && !star.classList.contains('hidden')){
+    star.style.left=Math.max(0,(hx-130))+'px';
+    star.style.bottom=(8+Math.max(0,hh-120)/2)+'px';
+    star.style.top='auto';
+  }
 }
 // Keyboard + mouse-zone inputs (same core as buttons).
 document.addEventListener('keydown', e=>{
@@ -1639,12 +1725,16 @@ function startChampion(){
   $('progress-fill').className='progress-fill';
   $('status-badge').classList.add('hidden');
   $('love-text').classList.add('hidden');
+  document.body.classList.add('champ-play');
+  const _mr=$('meter-row'); if(_mr) _mr.style.display='none'; // no Mana text in Champion
   updateMeters(); renderShop();
+  const _cf=$('champ-food-col'); if(_cf) _cf.classList.remove('hidden');
+  const _cs=$('champ-combo-star'); if(_cs) _cs.classList.remove('hidden');
+  positionChampOverlays();
   $('screen-setup').classList.add('hidden');
   $('screen-arena').classList.remove('hidden');
   $('end-screen').classList.add('hidden');
   document.body.classList.add('playing');
-  document.body.classList.add('champ-play');
   if($('arena-controls')) $('arena-controls').classList.remove('hidden');
   $('btn-pause').classList.remove('hidden');
   $('btn-resume').classList.add('hidden');
@@ -1750,6 +1840,9 @@ function champCleanup(){
   clearInterval(champTickTimer); champTickTimer=null;
   const box=$('champ-cards');
   if(box){ box.innerHTML=''; box.classList.add('hidden'); }
+  const cf=$('champ-food-col'); if(cf){ cf.innerHTML=''; cf.classList.add('hidden'); }
+  const cs=$('champ-combo-star'); if(cs){ cs.classList.remove('star-full'); cs.classList.add('hidden'); }
+  const mr2=$('meter-row'); if(mr2) mr2.style.display='';
   document.body.classList.remove('champ-play');
 }
 (function champInit(){
@@ -1843,7 +1936,27 @@ function renderShop(){
     shop.appendChild(d);
   }
   shop.style.display='flex';
-  const fs=$('food-shop'); if(!fs) return; fs.innerHTML='';
+  const fs=$('food-shop'); if(fs) fs.innerHTML='';
+  const fc=$('champ-food-col');
+  if(isChampMode()){
+    if(fs) fs.style.display='none';
+    if(fc){ fc.classList.remove('hidden'); fc.innerHTML='';
+      for(const f of FOOD_ITEMS){
+        if(f.enabled===false) continue;
+        const ready=mana>=(f.price||5);
+        const d=document.createElement('div');
+        d.className='food-card '+(ready?'ready':'locked');
+        d.innerHTML=skillIconHtml(f,40)+'<div class="scap"><div class="sname">'+f.name+'</div>'+manaOrbHtml(f,(f.price||5))+'</div>';
+        d.style.pointerEvents='auto'; d.style.cursor='pointer';
+        d.onclick=(function(id){ return function(){ applyFood(id); }; })(f.id);
+        fc.appendChild(d);
+      }
+      positionChampOverlays();
+    }
+    return;
+  }
+  if(fc) fc.classList.add('hidden');
+  if(!fs) return; fs.innerHTML='';
   for(const f of FOOD_ITEMS){
     if(f.enabled===false) continue;
     const ready=mana>=f.price;
