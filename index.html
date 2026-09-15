@@ -464,8 +464,9 @@
   <button id="btn-sfx" onclick="toggleSfx()" title="Game sounds (throw / munch / gulp)">🔊</button>
   <button id="btn-bgm" onclick="toggleBgm()" title="Background music">🎵</button>
   <div id="tabs">
-    <button id="tab-setup" class="active" onclick="showTab('setup')" title="Settings">⚙️</button>
-    <button id="tab-arena" onclick="startArena()" title="Play">▶</button>
+    <button id="tab-mode" class="hidden" onclick="returnToModeSelect()" title="Switch mode">🏠 Mode</button>
+    <button id="tab-setup" class="active hidden" onclick="showTab('setup')" title="Settings">⚙️</button>
+    <button id="tab-arena" class="hidden" onclick="startArena()" title="Play">▶</button>
   </div>
   <div id="arena-controls" class="hidden">
     <button id="btn-pause" onclick="pauseGame()" title="Pause">⏸</button>
@@ -475,8 +476,26 @@
   <button id="btn-fullscreen" onclick="toggleFullScreen()" title="Fullscreen">⛶</button>
 </div>
 
+<!-- ============ MODE SELECT LANDING SCREEN ============ -->
+<div id="screen-mode-select" class="panel" style="text-align:center; max-width:700px; margin:auto">
+  <h1 style="font-size:32px; color:#5c4a3a; margin-bottom:6px">⚔️ TIMER BATTLE ⚔️</h1>
+  <p style="font-size:18px; color:#776b5d; margin-bottom:24px">Chọn chế độ chơi để bắt đầu</p>
+  <div class="row" style="gap:24px; justify-content:center">
+    <button onclick="selectMode('timer')" style="background:#27ae60; color:#fff; padding:24px 36px; font-size:22px; border-radius:18px; display:flex; flex-direction:column; align-items:center; gap:8px; min-width:260px; box-shadow:0 6px 20px rgba(39,174,96,.4)">
+      <span style="font-size:48px">⏱</span>
+      <span>TIMER MODE</span>
+      <span style="font-size:14px; font-weight:normal; opacity:.9">Đồng hồ đếm ngược, Boss tiến tới, ném food & skill</span>
+    </button>
+    <button onclick="selectMode('champion')" style="background:#2980b9; color:#fff; padding:24px 36px; font-size:22px; border-radius:18px; display:flex; flex-direction:column; align-items:center; gap:8px; min-width:260px; box-shadow:0 6px 20px rgba(41,128,185,.4)">
+      <span style="font-size:48px">🃏</span>
+      <span>CHAMPION MODE</span>
+      <span style="font-size:14px; font-weight:normal; opacity:.9">Flashcards từ vựng, deck bài rút, đúng sai tích mana</span>
+    </button>
+  </div>
+</div>
+
 <!-- ============ SETUP SCREEN ============ -->
-<div id="screen-setup" class="panel">
+<div id="screen-setup" class="panel hidden">
   <h2>Settings</h2>
   <div class="setup-tabs">
     <button id="spb-time" class="active" onclick="showPane('time')">⏱ Time</button>
@@ -1142,7 +1161,42 @@ function fmt(ms){
 }
 
 /* ================= TABS / SETUP ================= */
+function selectMode(m){
+  setGameMode(m);
+  $('screen-mode-select').classList.add('hidden');
+  $('screen-setup').classList.remove('hidden');
+  $('screen-arena').classList.add('hidden');
+  $('end-screen').classList.add('hidden');
+  document.body.classList.remove('playing');
+  if($('tab-mode')) $('tab-mode').classList.remove('hidden');
+  if($('tab-setup')) $('tab-setup').classList.remove('hidden');
+  if($('tab-arena')) $('tab-arena').classList.remove('hidden');
+  // Champion-only tab visible only in champion mode; Time tab only in timer mode
+  if($('spb-champ')) $('spb-champ').style.display = (m==='champion') ? '' : 'none';
+  if($('spb-time')) $('spb-time').style.display = (m==='champion') ? 'none' : '';
+  const h2=document.querySelector('#screen-setup h2');
+  if(h2) h2.textContent = (m==='champion') ? 'Settings — 🃏 Champion' : 'Settings — ⏱ Timer';
+  showPane(m==='champion' ? 'champ' : 'time');
+  showTab('setup');
+}
+function returnToModeSelect(){
+  isRunning=false; cancelAnimationFrame(animationFrameId);
+  champCleanup();
+  $('end-screen').classList.add('hidden');
+  $('screen-arena').classList.add('hidden');
+  $('screen-setup').classList.add('hidden');
+  $('screen-mode-select').classList.remove('hidden');
+  document.body.classList.remove('playing');
+  if($('arena-controls')) $('arena-controls').classList.add('hidden');
+  if($('tab-mode')) $('tab-mode').classList.add('hidden');
+  if($('tab-setup')) $('tab-setup').classList.add('hidden');
+  if($('tab-arena')) $('tab-arena').classList.add('hidden');
+}
 function showTab(which){
+  if(which!=='setup' && !$('screen-mode-select').classList.contains('hidden')){
+    // setup/arena tabs only make sense after a mode is picked
+  }
+  $('screen-mode-select').classList.add('hidden');
   $('screen-setup').classList.toggle('hidden', which!=='setup');
   if(which==='setup') $('screen-arena').classList.add('hidden');
   document.body.classList.toggle('playing', which!=='setup');
@@ -1172,6 +1226,9 @@ function setGameMode(m){
 }
 function startArena(){
   if(gameMode==='champion'){ startChampion(); return; }
+  // Timer mode: never show Champion cards/clock state
+  document.body.classList.remove('champ-play');
+  if($('champ-cards')){ $('champ-cards').innerHTML=''; $('champ-cards').classList.add('hidden'); }
   const h=parseInt($('input-h').value)||0, m=parseInt($('input-m').value)||0, s=parseInt($('input-s').value)||0;
   totalTimeMs=(h*3600+m*60+s)*1000;
   if(totalTimeMs<=0){ alert('Please enter a time greater than 0!'); return; }
